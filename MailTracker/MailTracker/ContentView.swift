@@ -68,13 +68,17 @@ struct ContentView: View {
 
                 if !result.isEmpty {
                     Section("查询结果") {
-                        ScrollView {
-                            Text(result)
-                                .font(.system(.footnote, design: .monospaced))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
+                        ForEach(parseResult(result), id: \.0) { item in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.0)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(item.1)
+                                    .font(.subheadline)
+                                    .textSelection(.enabled)
+                            }
+                            .padding(.vertical, 4)
                         }
-                        .frame(height: 300)
                     }
                 }
             }
@@ -114,5 +118,32 @@ struct ContentView: View {
             return s
         }
         return "\(obj)"
+    }
+
+    private func parseResult(_ jsonString: String) -> [(String, String)] {
+        guard let data = jsonString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [("原始", jsonString)]
+        }
+        var items: [(String, String)] = []
+        for (key, value) in json {
+            if let arr = value as? [[String: Any]] {
+                for (i, item) in arr.enumerated() {
+                    for (k, v) in item {
+                        items.append(("\(k)", "\(v)"))
+                    }
+                    if i < arr.count - 1 {
+                        items.append(("——", ""))
+                    }
+                }
+            } else if let dict = value as? [String: Any] {
+                for (k, v) in dict {
+                    items.append(("\(k)", "\(v)"))
+                }
+            } else {
+                items.append((key, "\(value)"))
+            }
+        }
+        return items.isEmpty ? [("结果", jsonString)] : items
     }
 }
