@@ -34,7 +34,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
 struct ContentView: View {
     @State private var mailNo = ""
-    @State private var result = ""
+    @State private var resultDict: [String: Any] = [:]
     @State private var isLoading = false
     @State private var showPicker = false
 
@@ -66,32 +66,24 @@ struct ContentView: View {
                     }
                 }
 
-                if !result.isEmpty {
+                if !resultDict.isEmpty {
                     Section("查询结果") {
-                        ForEach(parseResult(result), id: \.0) { item in
-                            VStack(alignment: .leading, spacing: 4) {
+                        let items = flatten(resultDict, prefix: "")
+                        ForEach(items, id: \.0) { item in
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(item.0)
-                                    .font(.caption)
+                                    .font(.caption2)
                                     .foregroundColor(.secondary)
                                 Text(item.1)
                                     .font(.subheadline)
                                     .textSelection(.enabled)
                             }
-                            .padding(.vertical, 4)
+                            .padding(.vertical, 2)
                         }
                     }
                 }
             }
             .navigationTitle("内网邮件查询")
-            .toolbar {
-                if !HarConfig.shared.isConfigured {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Text("未配置")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
         }
         .sheet(isPresented: $showPicker) {
             DocumentPicker { url in
@@ -102,44 +94,27 @@ struct ContentView: View {
 
     private func doQuery() async {
         isLoading = true
-        result = ""
+        resultDict = [:]
         do {
             let json = try await NetworkManager.shared.query(mailNo: mailNo)
-            result = pretty(json)
+            resultDict = json
         } catch {
-            result = "查询失败: \(error.localizedDescription)"
+            resultDict = ["错误": error.localizedDescription]
         }
         isLoading = false
     }
 
-    private func pretty(_ obj: Any) -> String {
-        if let data = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted),
-           let s = String(data: data, encoding: .utf8) {
-            return s
-        }
-        return "\(obj)"
-    }
-
-    private func parseResult(_ jsonString: String) -> [(String, String)] {
-        guard let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return [("原始", jsonString)]
-        }
+    private func flatten(_ obj: Any, prefix: String) -> [(String, String)] {
         var items: [(String, String)] = []
-        flatten(json, prefix: "", into: &items)
-        return items.isEmpty ? [("结果", jsonString)] : items
-    }
-
-    private func flatten(_ obj: Any, prefix: String, into items: inout [(String, String)]) {
         if let dict = obj as? [String: Any] {
             for (key, value) in dict {
                 let label = prefix.isEmpty ? key : "\(prefix).\(key)"
                 if let arr = value as? [Any] {
                     for (i, item) in arr.enumerated() {
-                        flatten(item, prefix: "\(label)[\(i)]", into: &items)
+                        items.append(contentsOf: flatten(item, prefix: "\(label)[\(i)]"))
                     }
-                } else if let _ = value as? [String: Any] {
-                    flatten(value, prefix: label, into: &items)
+                } else if let sub = value as? [String: Any] {
+                    items.append(contentsOf: flatten(sub, prefix: label))
                 } else {
                     items.append((label, "\(value)"))
                 }
@@ -147,5 +122,6 @@ struct ContentView: View {
         } else {
             items.append((prefix, "\(obj)"))
         }
+        return items
     }
 }
