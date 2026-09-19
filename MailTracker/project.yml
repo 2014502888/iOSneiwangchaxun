@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.inner
   deploymentTarget:
     iOS: "15.0"
+  xcodeVersion: "15.0"
 targets:
   MailTracker:
     type: application
@@ -27,3 +28,4 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.inner.mailtracker
         PRODUCT_NAME: MailTracker
         CODE_SIGN_STYLE: Automatic
+        OBJECT_VERSION: 56
