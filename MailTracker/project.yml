@@ -1,0 +1,23 @@
+name: MailTracker
+options:
+  bundleIdPrefix: com.inner
+  deploymentTarget:
+    iOS: 15.0
+targets:
+  MailTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: MailTracker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inner.mailtracker
+        PRODUCT_NAME: MailTracker
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: YES
+        INFOPLIST_KEY_UISupportsDocumentBrowser: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: ""
