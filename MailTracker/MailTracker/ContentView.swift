@@ -1,11 +1,42 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
+
+struct DocumentPicker: UIViewControllerRepresentable {
+    var onPicked: (URL) -> Void
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+        picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = false
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPicked: onPicked)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        var onPicked: (URL) -> Void
+
+        init(onPicked: @escaping (URL) -> Void) {
+            self.onPicked = onPicked
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPicked(url)
+        }
+    }
+}
 
 struct ContentView: View {
     @State private var mailNo = ""
     @State private var result = ""
     @State private var isLoading = false
-    @State private var showImporter = false
+    @State private var showPicker = false
 
     var body: some View {
         NavigationStack {
@@ -33,7 +64,7 @@ struct ContentView: View {
                 .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
                 Button("导入HAR文件") {
-                    showImporter = true
+                    showPicker = true
                 }
 
                 ScrollView {
@@ -47,16 +78,9 @@ struct ContentView: View {
             .padding()
             .navigationTitle("内网邮件查询")
         }
-        .fileImporter(isPresented: $showImporter,
-                      allowedContentTypes: [.item],
-                      allowsMultipleSelection: false) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first {
-                    HarImporter.importHar(from: url)
-                }
-            case .failure(let error):
-                HarImporter.showToastPublic("选择文件失败: \(error.localizedDescription)")
+        .sheet(isPresented: $showPicker) {
+            DocumentPicker { url in
+                HarImporter.importHar(from: url)
             }
         }
     }
@@ -79,12 +103,5 @@ struct ContentView: View {
             return s
         }
         return "\(obj)"
-    }
-}
-
-extension HarImporter {
-    static func showToastPublic(_ msg: String) {
-        // reuse internal toast
-        _ = msg
     }
 }
