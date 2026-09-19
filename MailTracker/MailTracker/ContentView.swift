@@ -126,24 +126,26 @@ struct ContentView: View {
             return [("原始", jsonString)]
         }
         var items: [(String, String)] = []
-        for (key, value) in json {
-            if let arr = value as? [[String: Any]] {
-                for (i, item) in arr.enumerated() {
-                    for (k, v) in item {
-                        items.append(("\(k)", "\(v)"))
-                    }
-                    if i < arr.count - 1 {
-                        items.append(("——", ""))
-                    }
-                }
-            } else if let dict = value as? [String: Any] {
-                for (k, v) in dict {
-                    items.append(("\(k)", "\(v)"))
-                }
-            } else {
-                items.append((key, "\(value)"))
-            }
-        }
+        flatten(json, prefix: "", into: &items)
         return items.isEmpty ? [("结果", jsonString)] : items
+    }
+
+    private func flatten(_ obj: Any, prefix: String, into items: inout [(String, String)]) {
+        if let dict = obj as? [String: Any] {
+            for (key, value) in dict {
+                let label = prefix.isEmpty ? key : "\(prefix).\(key)"
+                if let arr = value as? [Any] {
+                    for (i, item) in arr.enumerated() {
+                        flatten(item, prefix: "\(label)[\(i)]", into: &items)
+                    }
+                } else if let _ = value as? [String: Any] {
+                    flatten(value, prefix: label, into: &items)
+                } else {
+                    items.append((label, "\(value)"))
+                }
+            }
+        } else {
+            items.append((prefix, "\(obj)"))
+        }
     }
 }
