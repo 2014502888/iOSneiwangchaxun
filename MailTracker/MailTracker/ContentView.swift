@@ -36,7 +36,7 @@ struct ContentView: View {
                     showImporter = true
                 }
                 .fileImporter(isPresented: $showImporter,
-                              allowedContentTypes: [.data],
+                              allowedContentTypes: [.item],
                               allowsMultipleSelection: false) { result in
                     switch result {
                     case .success(let urls):
