@@ -35,18 +35,6 @@ struct ContentView: View {
                 Button("导入HAR文件") {
                     showImporter = true
                 }
-                .fileImporter(isPresented: $showImporter,
-                              allowedContentTypes: [.item],
-                              allowsMultipleSelection: false) { result in
-                    switch result {
-                    case .success(let urls):
-                        if let url = urls.first {
-                            HarImporter.importHar(from: url)
-                        }
-                    case .failure(let error):
-                        HarImporter.showToastPublic("选择文件失败: \(error.localizedDescription)")
-                    }
-                }
 
                 ScrollView {
                     Text(result)
@@ -58,6 +46,18 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("内网邮件查询")
+        }
+        .fileImporter(isPresented: $showImporter,
+                      allowedContentTypes: [.item],
+                      allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    HarImporter.importHar(from: url)
+                }
+            case .failure(let error):
+                HarImporter.showToastPublic("选择文件失败: \(error.localizedDescription)")
+            }
         }
     }
 
