@@ -40,43 +40,54 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                if !HarConfig.shared.isConfigured {
-                    Text("未导入HAR，请先导入抓包文件")
-                        .foregroundColor(.red)
+            Form {
+                Section {
+                    TextField("输入单号", text: $mailNo)
+                        .keyboardType(.numberPad)
                 }
 
-                TextField("输入单号", text: $mailNo)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.numberPad)
+                Section {
+                    Button {
+                        Task { await doQuery() }
+                    } label: {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            Text("查询")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+                }
 
-                Button {
-                    Task { await doQuery() }
-                } label: {
-                    if isLoading {
-                        ProgressView()
-                    } else {
-                        Text("查询")
-                            .frame(maxWidth: .infinity)
+                Section {
+                    Button("导入HAR文件") {
+                        showPicker = true
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
-                Button("导入HAR文件") {
-                    showPicker = true
+                if !result.isEmpty {
+                    Section("查询结果") {
+                        ScrollView {
+                            Text(result)
+                                .font(.system(.footnote, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                        }
+                        .frame(height: 300)
+                    }
                 }
-
-                ScrollView {
-                    Text(result)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Spacer()
             }
-            .padding()
             .navigationTitle("内网邮件查询")
+            .toolbar {
+                if !HarConfig.shared.isConfigured {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Text("未配置")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showPicker) {
             DocumentPicker { url in
