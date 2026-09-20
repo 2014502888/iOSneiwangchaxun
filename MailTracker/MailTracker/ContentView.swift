@@ -398,7 +398,7 @@ struct ContentView: View {
             var active = 0
             var index = 0
             while index < unique.count || active > 0 {
-                while active < 5 && index < unique.count {
+                while active < 2 && index < unique.count {
                     let no = unique[index]
                     group.addTask {
                         do {
@@ -492,15 +492,17 @@ struct ContentView: View {
 
         if weight.isEmpty, let opDesc = node["opDesc"] as? String,
            let range = opDesc.range(of: "重量:") {
-            var s = String(opDesc[range.upperBound...])
-            if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
-            weight = s
+            let s = String(opDesc[range.upperBound...])
+            if let match = s.range(of: #"\d+\.?\d*\s*[gGkKmM]+"#, options: .regularExpression) {
+                weight = String(s[match])
+            }
         }
         if fee.isEmpty, let opDesc = node["opDesc"] as? String,
            let range = opDesc.range(of: "基本资费:") {
-            var s = String(opDesc[range.upperBound...])
-            if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
-            fee = s + "元"
+            let s = String(opDesc[range.upperBound...])
+            if let match = s.range(of: #"\d+\.?\d*\s*元"#, options: .regularExpression) {
+                fee = String(s[match])
+            }
         }
 
         if !time.isEmpty || !title.isEmpty {
