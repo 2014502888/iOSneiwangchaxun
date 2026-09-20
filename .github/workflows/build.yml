@@ -28,6 +28,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
+          ls build/Build/Products/Release-iphoneos/MailTracker.app/
+          ls build/Build/Products/Release-iphoneos/MailTracker.app/Frameworks/ || echo "No Frameworks"
 
       - name: Package IPA
         run: |
