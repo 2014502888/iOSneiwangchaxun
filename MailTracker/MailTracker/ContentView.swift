@@ -69,7 +69,7 @@ struct ContentView: View {
                 if !resultDict.isEmpty {
                     Section("查询结果") {
                         let items = flatten(resultDict, prefix: "")
-                        ForEach(items, id: \.0) { item in
+                        ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.0)
                                     .font(.caption2)
