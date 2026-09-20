@@ -201,13 +201,15 @@ struct ContentView: View {
             if let opDesc = node["opDesc"] as? String {
                 if infoWeight.isEmpty, let range = opDesc.range(of: "重量:") {
                     var s = String(opDesc[range.upperBound...])
-                    if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
-                    infoWeight = s
+                    if let match = s.range(of: #"\d+\.?\d*\s*[gGkKmM]+"#, options: .regularExpression) {
+                        infoWeight = String(s[match])
+                    }
                 }
                 if infoFee.isEmpty, let range = opDesc.range(of: "基本资费:") {
                     var s = String(opDesc[range.upperBound...])
-                    if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
-                    infoFee = s + "元"
+                    if let match = s.range(of: #"\d+\.?\d*\s*元"#, options: .regularExpression) {
+                        infoFee = String(s[match])
+                    }
                 }
             }
             infoWeight = infoWeight.isEmpty ? (node["mailWeight"] as? String ?? "") : infoWeight
