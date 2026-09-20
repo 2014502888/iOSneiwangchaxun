@@ -41,6 +41,7 @@ struct ContentView: View {
     @State private var isLoading = false
     @State private var showPicker = false
     @State private var errorMsg = ""
+    @State private var showDetail = false
 
     var body: some View {
         NavigationView {
@@ -67,23 +68,29 @@ struct ContentView: View {
                     }
                 }
                 if !traces.isEmpty {
-                    Section("物流详情") {
-                        ForEach(traces) { item in
+                    Section {
+                        Button {
+                            showDetail = true
+                        } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(item.time)
+                                Text("单号: \(mailNo)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                                Text(item.title)
+                                Text(traces[0].time)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(traces[0].title)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
-                                if !item.desc.isEmpty {
-                                    Text(item.desc)
+                                if !traces[0].desc.isEmpty {
+                                    Text(traces[0].desc)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
-                            .padding(.vertical, 4)
                         }
+                    } header: {
+                        Text("最新轨迹")
                     }
                 }
             }
@@ -92,6 +99,35 @@ struct ContentView: View {
         .sheet(isPresented: $showPicker) {
             DocumentPicker { url in
                 HarImporter.importHar(from: url)
+            }
+        }
+        .sheet(isPresented: $showDetail) {
+            NavigationView {
+                List {
+                    ForEach(traces) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.time)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(item.title)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            if !item.desc.isEmpty {
+                                Text(item.desc)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                .navigationTitle("物流详情")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("完成") { showDetail = false }
+                    }
+                }
             }
         }
     }
@@ -133,6 +169,7 @@ struct ContentView: View {
         for item in l {
             flatten(item, depth: 0, into: &items)
         }
+        items.sort { $0.time > $1.time }
         traces = items
     }
 
