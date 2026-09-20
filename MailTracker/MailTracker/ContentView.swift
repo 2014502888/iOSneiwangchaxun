@@ -204,8 +204,26 @@ struct ContentView: View {
         }
         let province = node["opOrgProvName"] as? String ?? ""
         let city = node["opOrgCity"] as? String ?? ""
-        let weight = node["mailWeight"] as? String ?? ""
-        let fee = node["fee"] as? String ?? ""
+        var weight = node["mailWeight"] as? String ?? ""
+        var fee = node["fee"] as? String ?? ""
+
+        // Extract weight and fee from opDesc if not found
+        if let opDesc = node["opDesc"] as? String {
+            if weight.isEmpty, let range = opDesc.range(of: "重量:") {
+                var s = String(opDesc[range.upperBound...])
+                if let end = s.firstIndex(of: " ") {
+                    s = String(s[..<end])
+                }
+                weight = s
+            }
+            if fee.isEmpty, let range = opDesc.range(of: "基本资费:") {
+                var s = String(opDesc[range.upperBound...])
+                if let end = s.firstIndex(of: "元") {
+                    s = String(s[..<end])
+                }
+                fee = s + "元"
+            }
+        }
         if !time.isEmpty || !title.isEmpty {
             items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, weight: weight, fee: fee))
         }
