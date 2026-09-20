@@ -70,6 +70,7 @@ class NetworkManager: NSObject, URLSessionDelegate {
             request.setValue(cfg.userAgent, forHTTPHeaderField: "User-Agent")
         }
         request.setValue("http://211.156.201.20:8012", forHTTPHeaderField: "Origin")
+        request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
         if cfg.isIOS {
             request.setValue("http://211.156.201.20:8012/so-novel-xm/", forHTTPHeaderField: "Referer")
             request.setValue("zh-CN,zh-Hans;q=0.9", forHTTPHeaderField: "Accept-Language")
