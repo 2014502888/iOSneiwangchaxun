@@ -40,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MailTracker-IPA
-          path: MailTracker.ipa
+          path: MailTracker/MailTracker.ipa
