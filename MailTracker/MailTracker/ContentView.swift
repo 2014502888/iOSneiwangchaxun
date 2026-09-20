@@ -216,8 +216,26 @@ struct ContentView: View {
         infoFee = ""
         infoProvince = ""
         infoCity = ""
+
+        let lines = mailNo.components(separatedBy: .newlines)
+        var seen = Set<String>()
+        var validNos: [String] = []
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            if !seen.contains(trimmed) {
+                seen.insert(trimmed)
+                validNos.append(trimmed)
+            }
+        }
+        guard !validNos.isEmpty else {
+            errorMsg = "请输入单号"
+            isLoading = false
+            return
+        }
+        let firstNo = validNos[0]
         do {
-            let json = try await NetworkManager.shared.query(mailNo: mailNo)
+            let json = try await NetworkManager.shared.query(mailNo: firstNo)
             parseTraces(json)
         } catch {
             errorMsg = "查询失败: \(error.localizedDescription)"
