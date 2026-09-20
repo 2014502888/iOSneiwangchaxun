@@ -14,7 +14,6 @@ class NetworkManager: NSObject, URLSessionDelegate {
         let config = URLSessionConfiguration.ephemeral
         config.httpAdditionalHeaders = [
             "Accept": "application/json, text/plain, */*",
-            "Accept-Language": HarConfig.shared.isIOS ? "zh-CN,zh-Hans;q=0.9" : "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
             "Pragma": "no-cache",
             "Cache-Control": "no-cache"
         ]
@@ -24,7 +23,9 @@ class NetworkManager: NSObject, URLSessionDelegate {
     func query(mailNo: String) async throws -> [String: Any] {
         let token = try await fetchToken()
 
-        let url = URL(string: "\(baseURL)/so-novel-biz/mail/getMailTraceByMailNo?userId=\(userId)&from=\(from)&mailNo=\(mailNo)")!
+        guard let url = URL(string: "\(baseURL)/so-novel-biz/mail/getMailTraceByMailNo?userId=\(userId)&from=\(from)&mailNo=\(mailNo)") else {
+            throw NSError(domain: "Network", code: -3, userInfo: [NSLocalizedDescriptionKey: "URL错误"])
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
@@ -45,7 +46,9 @@ class NetworkManager: NSObject, URLSessionDelegate {
     private func fetchToken() async throws -> String {
         if let token = token, !token.isEmpty { return token }
 
-        let url = URL(string: "\(baseURL)/so-novel-biz/common/xmGetToken?userId=\(userId)&from=\(from)")!
+        guard let url = URL(string: "\(baseURL)/so-novel-biz/common/xmGetToken?userId=\(userId)&from=\(from)") else {
+            throw NSError(domain: "Network", code: -3, userInfo: [NSLocalizedDescriptionKey: "URL错误"])
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         applyHeaders(to: &request)
@@ -55,7 +58,7 @@ class NetworkManager: NSObject, URLSessionDelegate {
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw NSError(domain: "Network", code: -1, userInfo: [NSLocalizedDescriptionKey: "获取token失败"])
         }
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let dataArr = json["data"] as? [[String: Any]],
               let first = dataArr.first,
               let inner = first["data"] as? [String: Any],
@@ -80,16 +83,5 @@ class NetworkManager: NSObject, URLSessionDelegate {
             request.setValue("com.holly.android.holly.uc_test", forHTTPHeaderField: "X-Requested-With")
             request.setValue("zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", forHTTPHeaderField: "Accept-Language")
         }
-    }
-
-    // Allow HTTP (not HTTPS) for intranet
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
-                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-              let trust = challenge.protectionSpace.serverTrust else {
-            completionHandler(.performDefaultHandling, nil)
-            return
-        }
-        completionHandler(.useCredential, URLCredential(trust: trust))
     }
 }

@@ -33,8 +33,9 @@ struct DocumentPicker: UIViewControllerRepresentable {
 }
 
 struct ContentView: View {
+    @ObservedObject var config = HarConfig.shared
     @State private var mailNo = ""
-    @State private var resultDict: [String: Any] = [:]
+    @State private var resultText = ""
     @State private var isLoading = false
     @State private var showPicker = false
 
@@ -57,7 +58,7 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity)
                         }
                     }
-                    .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+                    .disabled(mailNo.isEmpty || isLoading || !config.isConfigured)
                 }
 
                 Section {
@@ -66,20 +67,15 @@ struct ContentView: View {
                     }
                 }
 
-                if !resultDict.isEmpty {
+                if !resultText.isEmpty {
                     Section("查询结果") {
-                        let items = flatten(resultDict, prefix: "")
-                        ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.0)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                Text(item.1)
-                                    .font(.subheadline)
-                                    .textSelection(.enabled)
-                            }
-                            .padding(.vertical, 2)
+                        ScrollView {
+                            Text(resultText)
+                                .font(.system(.footnote, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
                         }
+                        .frame(height: 300)
                     }
                 }
             }
@@ -94,34 +90,18 @@ struct ContentView: View {
 
     private func doQuery() async {
         isLoading = true
-        resultDict = [:]
+        resultText = ""
         do {
             let json = try await NetworkManager.shared.query(mailNo: mailNo)
-            resultDict = json
+            if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
+               let s = String(data: data, encoding: .utf8) {
+                resultText = s
+            } else {
+                resultText = "\(json)"
+            }
         } catch {
-            resultDict = ["错误": error.localizedDescription]
+            resultText = "查询失败: \(error.localizedDescription)"
         }
         isLoading = false
-    }
-
-    private func flatten(_ obj: Any, prefix: String) -> [(String, String)] {
-        var items: [(String, String)] = []
-        if let dict = obj as? [String: Any] {
-            for (key, value) in dict {
-                let label = prefix.isEmpty ? key : "\(prefix).\(key)"
-                if let arr = value as? [Any] {
-                    for (i, item) in arr.enumerated() {
-                        items.append(contentsOf: flatten(item, prefix: "\(label)[\(i)]"))
-                    }
-                } else if let sub = value as? [String: Any] {
-                    items.append(contentsOf: flatten(sub, prefix: label))
-                } else {
-                    items.append((label, "\(value)"))
-                }
-            }
-        } else {
-            items.append((prefix, "\(obj)"))
-        }
-        return items
     }
 }
