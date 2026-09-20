@@ -112,15 +112,18 @@ struct ContentView: View {
         .sheet(isPresented: $showDetail) {
             NavigationView {
                 List {
-                    Section("物流信息") {
-                        Text("单号: \(mailNo)")
-                        Text("寄达省: \(infoProvince)")
-                        Text("寄达市: \(infoCity)")
-                        Text("重量: \(infoWeight)")
-                        Text("资费: \(infoFee)")
-                        Text("全部节点: \(traces.count)条")
+                    Section {
+                        Text(mailNo)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Text("寄达\(infoProvince)\(infoCity)")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Text("重量\(infoWeight)  资费\(infoFee)")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    Section("全部轨迹") {
+                    Section("全部轨迹（\(traces.count)条）") {
                         ForEach(traces) { item in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.time)
