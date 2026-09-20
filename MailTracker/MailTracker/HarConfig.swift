@@ -1,11 +1,10 @@
 import Foundation
-import Combine
 
-class HarConfig: ObservableObject {
+class HarConfig {
     static let shared = HarConfig()
 
-    @Published var sessionId: String = ""
-    @Published var userAgent: String = ""
+    var sessionId: String = ""
+    var userAgent: String = ""
 
     private let defaults = UserDefaults.standard
 

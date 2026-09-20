@@ -12,11 +12,6 @@ class NetworkManager: NSObject, URLSessionDelegate {
 
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
-        config.httpAdditionalHeaders = [
-            "Accept": "application/json, text/plain, */*",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache"
-        ]
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 
@@ -37,7 +32,7 @@ class NetworkManager: NSObject, URLSessionDelegate {
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw NSError(domain: "Network", code: -1, userInfo: [NSLocalizedDescriptionKey: "HTTP错误"])
         }
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw NSError(domain: "Network", code: -2, userInfo: [NSLocalizedDescriptionKey: "解析失败"])
         }
         return json

@@ -20,11 +20,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var onPicked: (URL) -> Void
-
-        init(onPicked: @escaping (URL) -> Void) {
-            self.onPicked = onPicked
-        }
-
+        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             onPicked(url)
@@ -33,7 +29,6 @@ struct DocumentPicker: UIViewControllerRepresentable {
 }
 
 struct ContentView: View {
-    @ObservedObject var config = HarConfig.shared
     @State private var mailNo = ""
     @State private var resultText = ""
     @State private var isLoading = false
@@ -46,27 +41,18 @@ struct ContentView: View {
                     TextField("输入单号", text: $mailNo)
                         .keyboardType(.numberPad)
                 }
-
                 Section {
                     Button {
                         Task { await doQuery() }
                     } label: {
-                        if isLoading {
-                            ProgressView()
-                        } else {
-                            Text("查询")
-                                .frame(maxWidth: .infinity)
-                        }
+                        if isLoading { ProgressView() }
+                        else { Text("查询").frame(maxWidth: .infinity) }
                     }
-                    .disabled(mailNo.isEmpty || isLoading || !config.isConfigured)
+                    .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
                 }
-
                 Section {
-                    Button("导入HAR文件") {
-                        showPicker = true
-                    }
+                    Button("导入HAR文件") { showPicker = true }
                 }
-
                 if !resultText.isEmpty {
                     Section("查询结果") {
                         ScrollView {
