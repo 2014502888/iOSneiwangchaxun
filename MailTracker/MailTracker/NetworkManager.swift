@@ -9,6 +9,8 @@ class NetworkManager: NSObject, URLSessionDelegate {
     private let from = "xm"
 
     private var token: String?
+    private let tokenLock = NSLock()
+    private var tokenTask: Task<String, Error>?
 
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -16,7 +18,7 @@ class NetworkManager: NSObject, URLSessionDelegate {
     }()
 
     func query(mailNo: String) async throws -> [String: Any] {
-        let token = try await fetchToken()
+        let t = try await fetchToken()
 
         guard let url = URL(string: "\(baseURL)/so-novel-biz/mail/getMailTraceByMailNo?userId=\(userId)&from=\(from)&mailNo=\(mailNo)") else {
             throw NSError(domain: "Network", code: -3, userInfo: [NSLocalizedDescriptionKey: "URL错误"])
@@ -25,7 +27,7 @@ class NetworkManager: NSObject, URLSessionDelegate {
         request.httpMethod = "POST"
         request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
         applyHeaders(to: &request)
-        request.setValue("sessionId=\(HarConfig.shared.sessionId); xmToken=\(token)", forHTTPHeaderField: "Cookie")
+        request.setValue("sessionId=\(HarConfig.shared.sessionId); xmToken=\(t)", forHTTPHeaderField: "Cookie")
         request.httpBody = "{\"mailNo\":\"\(mailNo)\"}".data(using: .utf8)
 
         let (data, response) = try await session.data(for: request)
@@ -39,8 +41,30 @@ class NetworkManager: NSObject, URLSessionDelegate {
     }
 
     private func fetchToken() async throws -> String {
-        if let token = token, !token.isEmpty { return token }
+        tokenLock.lock()
+        if let t = token, !t.isEmpty {
+            tokenLock.unlock()
+            return t
+        }
+        // 已有正在获取的任务，等它完成
+        if let existing = tokenTask {
+            tokenLock.unlock()
+            return try await existing.value
+        }
+        let task = Task { () -> String in
+            defer {
+                tokenLock.lock()
+                tokenTask = nil
+                tokenLock.unlock()
+            }
+            return try await self.doFetchToken()
+        }
+        tokenTask = task
+        tokenLock.unlock()
+        return try await task.value
+    }
 
+    private func doFetchToken() async throws -> String {
         guard let url = URL(string: "\(baseURL)/so-novel-biz/common/xmGetToken?userId=\(userId)&from=\(from)") else {
             throw NSError(domain: "Network", code: -3, userInfo: [NSLocalizedDescriptionKey: "URL错误"])
         }
@@ -60,7 +84,9 @@ class NetworkManager: NSObject, URLSessionDelegate {
               let newToken = inner["token"] as? String, !newToken.isEmpty else {
             throw NSError(domain: "Network", code: -2, userInfo: [NSLocalizedDescriptionKey: "session验证失败"])
         }
+        tokenLock.lock()
         token = newToken
+        tokenLock.unlock()
         return newToken
     }
 
