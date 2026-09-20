@@ -37,8 +37,17 @@ struct TraceItem: Identifiable {
     let city: String
     let orgName: String
     let orgCode: String
-    let weight: String
-    let fee: String
+}
+
+struct QueryResult: Identifiable {
+    let id = UUID()
+    let mailNo: String
+    var traces: [TraceItem]
+    var weight: String
+    var fee: String
+    var destProvince: String
+    var destCity: String
+    var error: String?
 }
 
 // MARK: - 输入解析（按 KDApp 逻辑）
@@ -109,15 +118,11 @@ enum TrackParsing {
 
 struct ContentView: View {
     @State private var mailNo = ""
-    @State private var traces: [TraceItem] = []
+    @State private var results: [QueryResult] = []
     @State private var isLoading = false
     @State private var showPicker = false
     @State private var errorMsg = ""
-    @State private var showDetail = false
-    @State private var infoWeight = ""
-    @State private var infoFee = ""
-    @State private var infoProvince = ""
-    @State private var infoCity = ""
+    @State private var selectedResult: QueryResult?
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -182,7 +187,7 @@ struct ContentView: View {
                         .padding()
                 }
 
-                if traces.isEmpty && !isLoading {
+                if results.isEmpty && !isLoading {
                     Spacer()
                     VStack(spacing: 16) {
                         Image(systemName: "cube.box")
@@ -192,31 +197,40 @@ struct ContentView: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                } else if !traces.isEmpty {
-                    ScrollView {
-                        Button {
-                            showDetail = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(mailNo)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(traces[0].time)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(traces[0].title)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                if !traces[0].desc.isEmpty {
-                                    Text(traces[0].desc)
+                } else if !results.isEmpty {
+                    List {
+                        ForEach(results) { r in
+                            Button {
+                                selectedResult = r
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(r.mailNo)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                    if let err = r.error {
+                                        Text(err)
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    } else if !r.traces.isEmpty {
+                                        Text(r.traces[0].time)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(r.traces[0].title)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                        if !r.traces[0].desc.isEmpty {
+                                            Text(r.traces[0].desc)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(2)
+                                        }
+                                    }
                                 }
+                                .padding(.vertical, 4)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
                         }
                     }
+                    .listStyle(PlainListStyle())
                 }
             }
             .navigationTitle("快递查询")
@@ -252,36 +266,42 @@ struct ContentView: View {
                 HarImporter.importHar(from: url)
             }
         }
-        .sheet(isPresented: $showDetail) {
+        .sheet(item: $selectedResult) { r in
             NavigationView {
                 List {
                     Section {
-                        Text(mailNo)
+                        Text(r.mailNo)
                             .font(.headline)
                             .frame(maxWidth: .infinity, alignment: .center)
-                        Text("寄达\(infoProvince)\(infoCity)")
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        Text("重量\(infoWeight)  资费\(infoFee)")
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                        if !r.destCity.isEmpty {
+                            Text("寄达\(r.destProvince)\(r.destCity)")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        if !r.weight.isEmpty || !r.fee.isEmpty {
+                            Text("重量\(r.weight)  资费\(r.fee)")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
                     }
-                    Section("全部轨迹（\(traces.count)条）") {
-                        ForEach(traces) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.time)
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                                Text(item.title)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                if !item.desc.isEmpty {
-                                    Text(item.desc)
+                    if !r.traces.isEmpty {
+                        Section("全部轨迹（\(r.traces.count)条）") {
+                            ForEach(r.traces) { item in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.time)
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.blue)
+                                    Text(item.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    if !item.desc.isEmpty {
+                                        Text(item.desc)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                .padding(.vertical, 4)
                             }
-                            .padding(.vertical, 4)
                         }
                     }
                 }
@@ -289,7 +309,7 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("完成") { showDetail = false }
+                        Button("完成") { selectedResult = nil }
                     }
                 }
             }
@@ -297,62 +317,39 @@ struct ContentView: View {
     }
 
     private func exportXLSX() {
-        guard !traces.isEmpty else { return }
+        let validResults = results.filter { !$0.traces.isEmpty }
+        guard !validResults.isEmpty else { return }
 
-        let last = traces[0]
-
-        // 收寄节点：找 opName 含"收寄"的 trace
-        var acceptTrace: TraceItem? = nil
-        for t in traces {
-            if t.title.contains("收寄") {
-                acceptTrace = t
-                break
+        var rows: [[String]] = []
+        for r in validResults {
+            let last = r.traces[0]
+            var acceptTrace: TraceItem? = nil
+            for t in r.traces {
+                if t.title.contains("收寄") { acceptTrace = t; break }
             }
-        }
-        if acceptTrace == nil && traces.count > 1 {
-            acceptTrace = traces[traces.count - 2]
-        }
-
-        // 寄达地：从所有 trace 的 desc 找"发往:"或"发往："
-        var destCity = ""
-        for t in traces {
-            var s = t.desc
-            if let range = s.range(of: "发往:") {
-                s = String(s[range.upperBound...])
-            } else if let range = s.range(of: "发往：") {
-                s = String(s[range.upperBound...])
-            } else {
-                continue
+            if acceptTrace == nil && r.traces.count > 1 {
+                acceptTrace = r.traces[r.traces.count - 2]
             }
-            while s.first == " " || s.first == "　" { s.removeFirst() }
-            if let end = s.firstIndex(of: " ") {
-                s = String(s[..<end])
-            }
-            destCity = s
-            break
+            let row: [String] = [
+                r.mailNo,
+                last.time,
+                last.title,
+                r.weight,
+                r.fee,
+                last.province,
+                last.city,
+                last.orgName,
+                last.orgCode,
+                r.destCity,
+                r.destProvince,
+                acceptTrace?.province ?? "",
+                acceptTrace?.city ?? "",
+                acceptTrace?.orgName ?? ""
+            ]
+            rows.append(row)
         }
 
-        // 寄达省：通过 area.json 匹配
-        let destProvince = AreaUtil.shared.getProvinceByCity(destCity)
-
-        let row: [String] = [
-            mailNo,                          // 1. 邮件单号
-            last.time,                       // 2. 最后物流更新时间
-            last.title,                      // 3. 物流状态
-            infoWeight,                      // 4. 重量
-            infoFee,                         // 5. 资费
-            last.province,                   // 6. 所在省
-            last.city,                       // 7. 所在市
-            last.orgName,                    // 8. 所在机构
-            last.orgCode,                    // 9. 机构代码
-            destCity,                        // 10. 寄达地
-            destProvince,                    // 11. 寄达省
-            acceptTrace?.province ?? "",     // 12. 收寄省份
-            acceptTrace?.city ?? "",         // 13. 收寄城市
-            acceptTrace?.orgName ?? ""       // 14. 收寄机构
-        ]
-
-        let data = XLSXExporter.export(rows: [row])
+        let data = XLSXExporter.export(rows: rows)
         let fileName = XLSXExporter.defaultFileName() + ".xlsx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {
@@ -373,12 +370,8 @@ struct ContentView: View {
 
     private func doQuery() async {
         isLoading = true
-        traces = []
+        results = []
         errorMsg = ""
-        infoWeight = ""
-        infoFee = ""
-        infoProvince = ""
-        infoCity = ""
 
         let info = TrackParsing.parseInputDetailed(mailNo)
         guard !info.valid.isEmpty else {
@@ -386,82 +379,67 @@ struct ContentView: View {
             isLoading = false
             return
         }
-        let firstNo = info.valid[0]
-        do {
-            let json = try await NetworkManager.shared.query(mailNo: firstNo)
-            parseTraces(json)
-        } catch {
-            errorMsg = "查询失败: \(error.localizedDescription)"
+
+        for no in info.valid {
+            var r = QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: nil)
+            do {
+                let json = try await NetworkManager.shared.query(mailNo: no)
+                let parsed = parseTracesToResult(no, json: json)
+                r = parsed
+            } catch {
+                r.error = "查询失败"
+            }
+            results.append(r)
         }
         isLoading = false
     }
 
-    private func parseTraces(_ json: [String: Any]) {
+    private func parseTracesToResult(_ mailNo: String, json: [String: Any]) -> QueryResult {
         var list: [[String: Any]]?
-
         if let data = json["data"] as? [String: Any],
            let l = data["data"] as? [[String: Any]] {
             list = l
         } else if let l = json["data"] as? [[String: Any]] {
             list = l
         }
-
         guard let l = list, !l.isEmpty else {
-            if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
-               let s = String(data: data, encoding: .utf8) {
-                errorMsg = "无物流信息\n\(s)"
-            } else {
-                errorMsg = "无物流信息"
-            }
-            return
+            return QueryResult(mailNo: mailNo, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "无物流信息")
         }
 
         var items: [TraceItem] = []
+        var weight = ""
+        var fee = ""
         for item in l {
-            flatten(item, depth: 0, into: &items)
-            extractInfo(item)
+            flatten(item, into: &items, weight: &weight, fee: &fee)
         }
         items.sort { $0.time > $1.time }
-        traces = items
-    }
 
-    private func extractInfo(_ node: [String: Any]) {
-        if let opName = node["opName"] as? String, opName.contains("收寄计费") {
-            if let opDesc = node["opDesc"] as? String {
-                if infoWeight.isEmpty, let range = opDesc.range(of: "重量:") {
-                    var s = String(opDesc[range.upperBound...])
-                    if let match = s.range(of: #"\d+\.?\d*\s*[gGkKmM]+"#, options: .regularExpression) {
-                        infoWeight = String(s[match])
-                    }
-                }
-                if infoFee.isEmpty, let range = opDesc.range(of: "基本资费:") {
-                    var s = String(opDesc[range.upperBound...])
-                    if let match = s.range(of: #"\d+\.?\d*\s*元"#, options: .regularExpression) {
-                        infoFee = String(s[match])
-                    }
-                }
+        // 寄达地
+        var destCity = ""
+        for t in items {
+            var s = t.desc
+            if let range = s.range(of: "发往:") {
+                s = String(s[range.upperBound...])
+            } else if let range = s.range(of: "发往：") {
+                s = String(s[range.upperBound...])
+            } else {
+                continue
             }
-            infoWeight = infoWeight.isEmpty ? (node["mailWeight"] as? String ?? "") : infoWeight
-            infoFee = infoFee.isEmpty ? (node["fee"] as? String ?? "") : infoFee
+            while s.first == " " || s.first == "　" { s.removeFirst() }
+            if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+            destCity = s
+            break
         }
-        if infoProvince.isEmpty {
-            infoProvince = node["opOrgProvName"] as? String ?? ""
-        }
-        if infoCity.isEmpty {
-            infoCity = node["opOrgCity"] as? String ?? ""
-        }
-        if let children = node["children"] as? [[String: Any]] {
-            for child in children { extractInfo(child) }
-        }
+        let destProvince = AreaUtil.shared.getProvinceByCity(destCity)
+
+        return QueryResult(mailNo: mailNo, traces: items, weight: weight, fee: fee, destProvince: destProvince, destCity: destCity, error: nil)
     }
 
-    private func flatten(_ node: [String: Any], depth: Int, into items: inout [TraceItem]) {
+    private func flatten(_ node: [String: Any], into items: inout [TraceItem], weight: inout String, fee: inout String) {
         let time = node["opTime"] as? String ?? ""
         let title = node["opName"] as? String ?? ""
         var desc = ""
-        if let org = node["opOrgName"] as? String, !org.isEmpty {
-            desc = org
-        }
+        if let org = node["opOrgName"] as? String, !org.isEmpty { desc = org }
         if let opDesc = node["opDesc"] as? String, !opDesc.isEmpty {
             if !desc.isEmpty { desc += " - " }
             desc += opDesc
@@ -474,32 +452,25 @@ struct ContentView: View {
         let city = node["opOrgCity"] as? String ?? ""
         let orgName = node["opOrgName"] as? String ?? ""
         let orgCode = node["opOrgCode"] as? String ?? ""
-        var weight = node["mailWeight"] as? String ?? ""
-        var fee = node["fee"] as? String ?? ""
 
-        if let opDesc = node["opDesc"] as? String {
-            if weight.isEmpty, let range = opDesc.range(of: "重量:") {
-                var s = String(opDesc[range.upperBound...])
-                if let end = s.firstIndex(of: " ") {
-                    s = String(s[..<end])
-                }
-                weight = s
-            }
-            if fee.isEmpty, let range = opDesc.range(of: "基本资费:") {
-                var s = String(opDesc[range.upperBound...])
-                if let end = s.firstIndex(of: "元") {
-                    s = String(s[..<end])
-                }
-                fee = s + "元"
-            }
+        if weight.isEmpty, let opDesc = node["opDesc"] as? String,
+           let range = opDesc.range(of: "重量:") {
+            var s = String(opDesc[range.upperBound...])
+            if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+            weight = s
         }
+        if fee.isEmpty, let opDesc = node["opDesc"] as? String,
+           let range = opDesc.range(of: "基本资费:") {
+            var s = String(opDesc[range.upperBound...])
+            if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
+            fee = s + "元"
+        }
+
         if !time.isEmpty || !title.isEmpty {
-            items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, orgName: orgName, orgCode: orgCode, weight: weight, fee: fee))
+            items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, orgName: orgName, orgCode: orgCode))
         }
         if let children = node["children"] as? [[String: Any]] {
-            for child in children {
-                flatten(child, depth: depth + 1, into: &items)
-            }
+            for child in children { flatten(child, into: &items, weight: &weight, fee: &fee) }
         }
     }
 }
