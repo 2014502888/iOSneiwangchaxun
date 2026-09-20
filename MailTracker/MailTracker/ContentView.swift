@@ -81,7 +81,7 @@ struct ContentView: View {
                             showDetail = true
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("单号: \(mailNo)")
+                                Text(mailNo)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Text(traces[0].time)
@@ -125,7 +125,7 @@ struct ContentView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.time)
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.blue)
                                 Text(item.title)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
