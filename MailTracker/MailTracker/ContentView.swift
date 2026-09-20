@@ -123,6 +123,7 @@ struct ContentView: View {
     @State private var showPicker = false
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
+    @State private var queryStats = ""
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -185,6 +186,13 @@ struct ContentView: View {
                     Text(errorMsg)
                         .foregroundColor(.red)
                         .padding()
+                }
+
+                if !queryStats.isEmpty {
+                    Text(queryStats)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
                 }
 
                 if results.isEmpty && !isLoading {
@@ -372,6 +380,7 @@ struct ContentView: View {
         isLoading = true
         results = []
         errorMsg = ""
+        queryStats = ""
 
         let info = TrackParsing.parseInputDetailed(mailNo)
         guard !info.valid.isEmpty else {
@@ -380,17 +389,33 @@ struct ContentView: View {
             return
         }
 
-        for no in info.valid {
-            var r = QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: nil)
-            do {
-                let json = try await NetworkManager.shared.query(mailNo: no)
-                let parsed = parseTracesToResult(no, json: json)
-                r = parsed
-            } catch {
-                r.error = "查询失败"
+        // 去重
+        let unique = Array(Set(info.valid)).sorted()
+        let dupCount = info.valid.count - unique.count
+        let start = Date()
+
+        await withTaskGroup(of: QueryResult.self) { group in
+            for no in unique {
+                group.addTask {
+                    do {
+                        let json = try await NetworkManager.shared.query(mailNo: no)
+                        return parseTracesToResult(no, json: json)
+                    } catch {
+                        return QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败")
+                    }
+                }
             }
-            results.append(r)
+            var done = 0
+            for await r in group {
+                results.append(r)
+                done += 1
+                let success = results.filter { $0.error == nil }.count
+                let fail = results.count - success
+                let elapsed = Date().timeIntervalSince(start)
+                queryStats = "已查询 \(done)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
+            }
         }
+
         isLoading = false
     }
 
