@@ -124,6 +124,8 @@ struct ContentView: View {
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
+    @State private var showSettings = false
+    @State private var concurrency = 2
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -252,19 +254,11 @@ struct ContentView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 20) {
-                        Button {
-                            showPicker = true
-                        } label: {
-                            Image(systemName: "doc.badge.gearshape")
-                                .foregroundColor(.blue)
-                        }
-                        Button {
-                            exportXLSX()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundColor(.blue)
-                        }
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -272,6 +266,38 @@ struct ContentView: View {
         .sheet(isPresented: $showPicker) {
             DocumentPicker { url in
                 HarImporter.importHar(from: url)
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            NavigationView {
+                List {
+                    Section("查询设置") {
+                        Stepper(value: $concurrency, in: 1...20) {
+                            Text("并发数：\(concurrency)")
+                        }
+                    }
+                    Section("操作") {
+                        Button {
+                            showSettings = false
+                            showPicker = true
+                        } label: {
+                            Label("导入HAR文件", systemImage: "doc.badge.gearshape")
+                        }
+                        Button {
+                            showSettings = false
+                            exportXLSX()
+                        } label: {
+                            Label("导出Excel", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
+                .navigationTitle("设置")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("完成") { showSettings = false }
+                    }
+                }
             }
         }
         .sheet(item: $selectedResult) { r in
@@ -398,7 +424,7 @@ struct ContentView: View {
             var active = 0
             var index = 0
             while index < unique.count || active > 0 {
-                while active < 2 && index < unique.count {
+                while active < concurrency && index < unique.count {
                     let no = unique[index]
                     group.addTask {
                         do {
