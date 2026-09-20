@@ -39,6 +39,72 @@ struct TraceItem: Identifiable {
     let fee: String
 }
 
+// MARK: - 输入解析（按 KDApp 逻辑）
+enum TrackParsing {
+    static func isValidMailNum(_ digits: String) -> Bool {
+        guard digits.count == 13 else { return false }
+        guard let first = digits.first else { return false }
+        return first == "1" || first == "8" || first == "9"
+    }
+
+    static func parseInputDetailed(_ text: String) -> (valid: [String], invalid: Int) {
+        let normalized = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        let tokens = normalized
+            .split(whereSeparator: { $0.isWhitespace || $0 == "," || $0 == "，" || $0 == ";" || $0 == "；" })
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        var valid: [String] = []
+        var invalid = 0
+
+        for token in tokens {
+            var digits = ""
+            var segments: [String] = []
+            for ch in token {
+                if let ascii = ch.asciiValue, (48...57).contains(ascii) {
+                    digits.append(ch)
+                } else if !digits.isEmpty {
+                    segments.append(digits)
+                    digits = ""
+                }
+            }
+            if !digits.isEmpty { segments.append(digits) }
+
+            for seg in segments {
+                if seg.count == 13 {
+                    if isValidMailNum(seg) {
+                        valid.append(seg)
+                    } else {
+                        invalid += 1
+                    }
+                } else if seg.count == 14 {
+                    invalid += 1
+                } else if seg.count > 14 {
+                    var found: String? = nil
+                    for i in 0...(seg.count - 13) {
+                        let start = seg.index(seg.startIndex, offsetBy: i)
+                        let end = seg.index(start, offsetBy: 13)
+                        let sub = String(seg[start..<end])
+                        if let first = sub.first, first == "1" || first == "8" || first == "9" {
+                            found = sub
+                        }
+                    }
+                    if let f = found {
+                        valid.append(f)
+                    } else {
+                        invalid += 1
+                    }
+                } else {
+                    invalid += 1
+                }
+            }
+        }
+        return (valid, invalid)
+    }
+}
+
 struct ContentView: View {
     @State private var mailNo = ""
     @State private var traces: [TraceItem] = []
@@ -51,13 +117,32 @@ struct ContentView: View {
     @State private var infoProvince = ""
     @State private var infoCity = ""
 
+    private var inputInfo: (valid: [String], invalid: Int) {
+        TrackParsing.parseInputDetailed(mailNo)
+    }
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                ZStack(alignment: .topLeading) {
-                    if mailNo.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    if mailNo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("单号（每行一个，自动过滤中文）")
                             .foregroundColor(.secondary)
+                    } else {
+                        Text("\(inputInfo.valid.count) 个准备查询")
+                            .foregroundColor(.secondary)
+                        if inputInfo.invalid > 0 {
+                            Text("（\(inputInfo.invalid) 个非正确单号）")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                .font(.subheadline)
+                .padding(.horizontal)
+
+                ZStack(alignment: .topLeading) {
+                    if mailNo.isEmpty {
+                        Text("")
                             .padding(.horizontal, 12)
                             .padding(.vertical, 12)
                     }
@@ -66,7 +151,8 @@ struct ContentView: View {
                         .padding(4)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator)))
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.top, 4)
 
                 Button {
                     Task { await doQuery() }
@@ -81,12 +167,12 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(mailNo.isEmpty ? Color.gray : Color.blue)
+                    .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
                 .padding(.horizontal)
-                .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+                .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
                 if !errorMsg.isEmpty {
                     Text(errorMsg)
@@ -217,23 +303,13 @@ struct ContentView: View {
         infoProvince = ""
         infoCity = ""
 
-        let lines = mailNo.components(separatedBy: .newlines)
-        var seen = Set<String>()
-        var validNos: [String] = []
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-            if !seen.contains(trimmed) {
-                seen.insert(trimmed)
-                validNos.append(trimmed)
-            }
-        }
-        guard !validNos.isEmpty else {
-            errorMsg = "请输入单号"
+        let info = TrackParsing.parseInputDetailed(mailNo)
+        guard !info.valid.isEmpty else {
+            errorMsg = "请输入有效单号"
             isLoading = false
             return
         }
-        let firstNo = validNos[0]
+        let firstNo = info.valid[0]
         do {
             let json = try await NetworkManager.shared.query(mailNo: firstNo)
             parseTraces(json)
