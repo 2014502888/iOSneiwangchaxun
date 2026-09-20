@@ -4,7 +4,11 @@
 <dict>
     <key>CFBundleExecutable</key>
     <string>MailTracker</string>
-    <key>CFBundleDisplayName</key>
+    <key>CFBundleIdentifier</key>
+    <string>com.inner.mailtracker</string>
+    <key>CFBundleName</key>
+    <string>内网邮件查询</string>
+    <key>CFBundleDisplayName</string>
     <string>内网邮件查询</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
