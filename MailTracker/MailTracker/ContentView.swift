@@ -398,14 +398,20 @@ struct ContentView: View {
             var active = 0
             var index = 0
             while index < unique.count || active > 0 {
-                while active < 10 && index < unique.count {
+                while active < 5 && index < unique.count {
                     let no = unique[index]
                     group.addTask {
                         do {
                             let json = try await NetworkManager.shared.query(mailNo: no)
                             return parseTracesToResult(no, json: json)
                         } catch {
-                            return QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败")
+                            // 重试一次
+                            do {
+                                let json = try await NetworkManager.shared.query(mailNo: no)
+                                return parseTracesToResult(no, json: json)
+                            } catch {
+                                return QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败")
+                            }
                         }
                     }
                     active += 1
