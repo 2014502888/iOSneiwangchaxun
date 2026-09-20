@@ -31,9 +31,12 @@ jobs:
       - name: Package IPA
         run: |
           cd MailTracker/build/Build/Products/Release-iphoneos
-          mkdir Payload
+          mkdir -p Payload
           cp -r MailTracker.app Payload/
-          zip -r ../../../../MailTracker.ipa Payload
+          cd Payload
+          zip -r ../../../MailTracker.ipa MailTracker.app
+          cd ../../../../..
+          ls -la MailTracker/MailTracker.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
