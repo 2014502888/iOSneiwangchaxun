@@ -35,6 +35,8 @@ struct TraceItem: Identifiable {
     let desc: String
     let province: String
     let city: String
+    let orgName: String
+    let orgCode: String
     let weight: String
     let fee: String
 }
@@ -236,7 +238,7 @@ struct ContentView: View {
                                 .foregroundColor(.blue)
                         }
                         Button {
-                            // TODO: 导出
+                            exportXLSX()
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .foregroundColor(.blue)
@@ -291,6 +293,56 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func exportXLSX() {
+        guard !traces.isEmpty else { return }
+
+        let last = traces[0]
+        let second = traces.count > 1 ? traces[1] : nil
+
+        // 寄达地：从最后一条 trace 的 desc 提取"发往:城市"
+        var destCity = ""
+        if let range = last.desc.range(of: "发往:") {
+            var s = String(last.desc[range.upperBound...])
+            if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+            destCity = s
+        }
+
+        let row: [String] = [
+            mailNo,                          // 1. 邮件单号
+            last.time,                       // 2. 最后物流更新时间
+            last.title,                      // 3. 物流状态
+            infoWeight,                      // 4. 重量
+            infoFee,                         // 5. 资费
+            last.province,                   // 6. 所在省
+            last.city,                       // 7. 所在市
+            last.orgName,                    // 8. 所在机构
+            last.orgCode,                    // 9. 机构代码
+            destCity,                        // 10. 寄达地
+            "",                              // 11. 寄达省（AreaUtil 匹配，先留空）
+            second?.province ?? "",          // 12. 收寄省份
+            second?.city ?? "",              // 13. 收寄城市
+            second?.orgName ?? ""            // 14. 收寄机构
+        ]
+
+        let data = XLSXExporter.export(rows: [row])
+        let fileName = XLSXExporter.defaultFileName() + ".xlsx"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try data.write(to: url)
+            DispatchQueue.main.async {
+                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = UIApplication.shared.windows.first
+                    popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true)
+            }
+        } catch {
+            errorMsg = "导出失败: \(error.localizedDescription)"
         }
     }
 
@@ -395,6 +447,8 @@ struct ContentView: View {
         }
         let province = node["opOrgProvName"] as? String ?? ""
         let city = node["opOrgCity"] as? String ?? ""
+        let orgName = node["opOrgName"] as? String ?? ""
+        let orgCode = node["opOrgCode"] as? String ?? ""
         var weight = node["mailWeight"] as? String ?? ""
         var fee = node["fee"] as? String ?? ""
 
@@ -415,7 +469,7 @@ struct ContentView: View {
             }
         }
         if !time.isEmpty || !title.isEmpty {
-            items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, weight: weight, fee: fee))
+            items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, orgName: orgName, orgCode: orgCode, weight: weight, fee: fee))
         }
         if let children = node["children"] as? [[String: Any]] {
             for child in children {
