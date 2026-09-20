@@ -197,29 +197,27 @@ struct ContentView: View {
     }
 
     private func extractInfo(_ node: [String: Any]) {
-        if infoWeight.isEmpty {
-            infoWeight = node["mailWeight"] as? String ?? ""
-        }
-        if infoFee.isEmpty {
-            infoFee = node["fee"] as? String ?? ""
+        if let opName = node["opName"] as? String, opName.contains("收寄计费") {
+            if let opDesc = node["opDesc"] as? String {
+                if infoWeight.isEmpty, let range = opDesc.range(of: "重量:") {
+                    var s = String(opDesc[range.upperBound...])
+                    if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+                    infoWeight = s
+                }
+                if infoFee.isEmpty, let range = opDesc.range(of: "基本资费:") {
+                    var s = String(opDesc[range.upperBound...])
+                    if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
+                    infoFee = s + "元"
+                }
+            }
+            infoWeight = infoWeight.isEmpty ? (node["mailWeight"] as? String ?? "") : infoWeight
+            infoFee = infoFee.isEmpty ? (node["fee"] as? String ?? "") : infoFee
         }
         if infoProvince.isEmpty {
             infoProvince = node["opOrgProvName"] as? String ?? ""
         }
         if infoCity.isEmpty {
             infoCity = node["opOrgCity"] as? String ?? ""
-        }
-        if let opDesc = node["opDesc"] as? String {
-            if infoWeight.isEmpty, let range = opDesc.range(of: "重量:") {
-                var s = String(opDesc[range.upperBound...])
-                if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
-                infoWeight = s
-            }
-            if infoFee.isEmpty, let range = opDesc.range(of: "基本资费:") {
-                var s = String(opDesc[range.upperBound...])
-                if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
-                infoFee = s + "元"
-            }
         }
         if let children = node["children"] as? [[String: Any]] {
             for child in children { extractInfo(child) }
