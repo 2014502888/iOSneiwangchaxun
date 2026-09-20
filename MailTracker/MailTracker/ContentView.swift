@@ -138,13 +138,17 @@ struct ContentView: View {
                     if mailNo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("单号（每行一个，自动过滤中文）")
                             .foregroundColor(.secondary)
-                    } else {
+                    } else if results.isEmpty {
                         Text("\(inputInfo.valid.count) 个准备查询")
                             .foregroundColor(.secondary)
-                        if inputInfo.invalid > 0 {
-                            Text("（\(inputInfo.invalid) 个非正确单号）")
-                                .foregroundColor(.red)
-                        }
+                    } else {
+                        let success = results.filter { $0.error == nil }.count
+                        Text("\(success) 个查询成功")
+                            .foregroundColor(.secondary)
+                    }
+                    if inputInfo.invalid > 0 {
+                        Text("（\(inputInfo.invalid) 个非正确单号）")
+                            .foregroundColor(.red)
                     }
                 }
                 .font(.subheadline)
@@ -281,13 +285,23 @@ struct ContentView: View {
                             showSettings = false
                             showPicker = true
                         } label: {
-                            Label("导入HAR文件", systemImage: "doc.badge.gearshape")
+                            HStack {
+                                Image(systemName: "doc.badge.gearshape")
+                                    .foregroundColor(.blue)
+                                Text("导入HAR文件")
+                                Spacer()
+                            }
                         }
                         Button {
                             showSettings = false
                             exportXLSX()
                         } label: {
-                            Label("导出Excel", systemImage: "square.and.arrow.up")
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundColor(.blue)
+                                Text("导出Excel")
+                                Spacer()
+                            }
                         }
                     }
                 }
