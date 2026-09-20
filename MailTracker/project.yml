@@ -2,7 +2,7 @@ name: MailTracker
 options:
   bundleIdPrefix: com.inner
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "15.0"
   xcodeVersion: "15.0"
 targets:
   MailTracker:

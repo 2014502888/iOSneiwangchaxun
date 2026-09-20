@@ -35,7 +35,7 @@ struct ContentView: View {
     @State private var showPicker = false
 
     var body: some View {
-        NavigationStack {
+        NavigationView {
             Form {
                 Section {
                     TextField("输入单号", text: $mailNo)
