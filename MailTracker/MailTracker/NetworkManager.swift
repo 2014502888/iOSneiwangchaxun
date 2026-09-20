@@ -85,6 +85,11 @@ class NetworkManager: NSObject, URLSessionDelegate {
     // Allow HTTP (not HTTPS) for intranet
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
                     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        completionHandler(.useCredential, URLCredential(trust: trust))
     }
 }
