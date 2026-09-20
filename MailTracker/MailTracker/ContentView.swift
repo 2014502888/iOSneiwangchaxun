@@ -131,18 +131,29 @@ struct ContentView: View {
 
         var items: [TraceItem] = []
         for item in l {
-            let time = item["opTime"] as? String ?? ""
-            let title = item["opName"] as? String ?? ""
-            var desc = ""
-            if let org = item["opOrgName"] as? String, !org.isEmpty {
-                desc = org
-            }
-            if let opDesc = item["opDesc"] as? String, !opDesc.isEmpty {
-                if !desc.isEmpty { desc += " - " }
-                desc += opDesc
-            }
-            items.append(TraceItem(time: time, title: title, desc: desc))
+            flatten(item, depth: 0, into: &items)
         }
         traces = items
+    }
+
+    private func flatten(_ node: [String: Any], depth: Int, into items: inout [TraceItem]) {
+        let time = node["opTime"] as? String ?? ""
+        let title = node["opName"] as? String ?? ""
+        var desc = ""
+        if let org = node["opOrgName"] as? String, !org.isEmpty {
+            desc = org
+        }
+        if let opDesc = node["opDesc"] as? String, !opDesc.isEmpty {
+            if !desc.isEmpty { desc += " - " }
+            desc += opDesc
+        }
+        if !time.isEmpty || !title.isEmpty {
+            items.append(TraceItem(time: time, title: title, desc: desc))
+        }
+        if let children = node["children"] as? [[String: Any]] {
+            for child in children {
+                flatten(child, depth: depth + 1, into: &items)
+            }
+        }
     }
 }
