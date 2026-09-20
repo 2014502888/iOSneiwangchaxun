@@ -33,6 +33,10 @@ struct TraceItem: Identifiable {
     let time: String
     let title: String
     let desc: String
+    let province: String
+    let city: String
+    let weight: String
+    let fee: String
 }
 
 struct ContentView: View {
@@ -104,21 +108,31 @@ struct ContentView: View {
         .sheet(isPresented: $showDetail) {
             NavigationView {
                 List {
-                    ForEach(traces) { item in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.time)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(item.title)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            if !item.desc.isEmpty {
-                                Text(item.desc)
+                    Section("物流信息") {
+                        Text("单号: \(mailNo)")
+                        Text("寄达省: \(traces.first?.province ?? "")")
+                        Text("寄达市: \(traces.first?.city ?? "")")
+                        Text("重量: \(traces.first?.weight ?? "")")
+                        Text("资费: \(traces.first?.fee ?? "")")
+                        Text("全部节点: \(traces.count)条")
+                    }
+                    Section("全部轨迹") {
+                        ForEach(traces) { item in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.time)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                Text(item.title)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                if !item.desc.isEmpty {
+                                    Text(item.desc)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
                 .navigationTitle("物流详情")
@@ -188,8 +202,12 @@ struct ContentView: View {
             if !desc.isEmpty { desc += " - " }
             desc += "操作员: \(operatorName)"
         }
+        let province = node["opOrgProvName"] as? String ?? ""
+        let city = node["opOrgCity"] as? String ?? ""
+        let weight = node["mailWeight"] as? String ?? ""
+        let fee = node["fee"] as? String ?? ""
         if !time.isEmpty || !title.isEmpty {
-            items.append(TraceItem(time: time, title: title, desc: desc))
+            items.append(TraceItem(time: time, title: title, desc: desc, province: province, city: city, weight: weight, fee: fee))
         }
         if let children = node["children"] as? [[String: Any]] {
             for child in children {
