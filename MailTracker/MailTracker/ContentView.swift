@@ -53,30 +53,55 @@ struct ContentView: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    TextField("输入单号", text: $mailNo)
-                        .keyboardType(.numberPad)
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("单号（每行一个，自动过滤中文）")
+                        .foregroundColor(.secondary)
+                    TextEditor(text: $mailNo)
+                        .frame(minHeight: 200)
+                        .padding(8)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator)))
                 }
-                Section {
-                    Button {
-                        Task { await doQuery() }
-                    } label: {
-                        if isLoading { ProgressView() }
-                        else { Text("查询").frame(maxWidth: .infinity) }
+                .padding()
+
+                Button {
+                    Task { await doQuery() }
+                } label: {
+                    HStack {
+                        if isLoading {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "magnifyingglass")
+                            Text("查询")
+                        }
                     }
-                    .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
                 }
-                Section {
-                    Button("导入HAR文件") { showPicker = true }
-                }
+                .padding(.horizontal)
+                .disabled(mailNo.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+
                 if !errorMsg.isEmpty {
-                    Section("错误") {
-                        Text(errorMsg).foregroundColor(.red)
-                    }
+                    Text(errorMsg)
+                        .foregroundColor(.red)
+                        .padding()
                 }
-                if !traces.isEmpty {
-                    Section {
+
+                if traces.isEmpty && !isLoading {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "cube.box")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("输入单号后点击查询")
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                } else if !traces.isEmpty {
+                    ScrollView {
                         Button {
                             showDetail = true
                         } label: {
@@ -96,13 +121,39 @@ struct ContentView: View {
                                         .foregroundColor(.secondary)
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
                         }
-                    } header: {
-                        Text("最新轨迹")
                     }
                 }
             }
-            .navigationTitle("内网邮件查询")
+            .navigationTitle("快递查询")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        mailNo = ""
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.blue)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 20) {
+                        Button {
+                            showPicker = true
+                        } label: {
+                            Image(systemName: "doc.badge.gearshape")
+                                .foregroundColor(.blue)
+                        }
+                        Button {
+                            // TODO: 导出
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showPicker) {
             DocumentPicker { url in
@@ -249,7 +300,6 @@ struct ContentView: View {
         var weight = node["mailWeight"] as? String ?? ""
         var fee = node["fee"] as? String ?? ""
 
-        // Extract weight and fee from opDesc if not found
         if let opDesc = node["opDesc"] as? String {
             if weight.isEmpty, let range = opDesc.range(of: "重量:") {
                 var s = String(opDesc[range.upperBound...])
