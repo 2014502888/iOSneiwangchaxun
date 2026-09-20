@@ -184,6 +184,10 @@ struct ContentView: View {
             if !desc.isEmpty { desc += " - " }
             desc += opDesc
         }
+        if let operatorName = node["operatorName"] as? String, !operatorName.isEmpty {
+            if !desc.isEmpty { desc += " - " }
+            desc += "操作员: \(operatorName)"
+        }
         if !time.isEmpty || !title.isEmpty {
             items.append(TraceItem(time: time, title: title, desc: desc))
         }
