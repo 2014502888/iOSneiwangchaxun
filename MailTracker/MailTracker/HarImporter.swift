@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 import UIKit
 
 enum HarImporter {
@@ -58,16 +57,7 @@ enum HarImporter {
             }
 
             HarConfig.shared.save(sessionId: sessionId, userAgent: userAgent)
-            showToast("HAR导入成功")
-
-            // Restart to clear cached tokens
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                   let delegate = scene.delegate as? UIWindowSceneDelegate,
-                   let window = delegate.window {
-                    window?.rootViewController = UIHostingController(rootView: ContentView())
-                }
-            }
+            showToast("HAR导入成功，重启App生效")
         } catch {
             showToast("HAR导入失败: \(error.localizedDescription)")
         }
