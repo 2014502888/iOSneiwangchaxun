@@ -302,12 +302,23 @@ struct ContentView: View {
         let last = traces[0]
         let second = traces.count > 1 ? traces[1] : nil
 
-        // 寄达地：从最后一条 trace 的 desc 提取"发往:城市"
+        // 寄达地：从所有 trace 的 desc 找"发往:"或"发往："
         var destCity = ""
-        if let range = last.desc.range(of: "发往:") {
-            var s = String(last.desc[range.upperBound...])
-            if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+        for t in traces {
+            var s = t.desc
+            if let range = s.range(of: "发往:") {
+                s = String(s[range.upperBound...])
+            } else if let range = s.range(of: "发往：") {
+                s = String(s[range.upperBound...])
+            } else {
+                continue
+            }
+            while s.first == " " || s.first == "　" { s.removeFirst() }
+            if let end = s.firstIndex(of: " ") {
+                s = String(s[..<end])
+            }
             destCity = s
+            break
         }
 
         let row: [String] = [
