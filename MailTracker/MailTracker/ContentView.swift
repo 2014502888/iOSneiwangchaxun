@@ -398,7 +398,7 @@ struct ContentView: View {
             var active = 0
             var index = 0
             while index < unique.count || active > 0 {
-                while active < 5 && index < unique.count {
+                while active < 10 && index < unique.count {
                     let no = unique[index]
                     group.addTask {
                         do {
