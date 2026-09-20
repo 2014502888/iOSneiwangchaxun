@@ -28,11 +28,19 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 }
 
+struct TraceItem: Identifiable {
+    let id = UUID()
+    let time: String
+    let title: String
+    let desc: String
+}
+
 struct ContentView: View {
     @State private var mailNo = ""
-    @State private var resultText = ""
+    @State private var traces: [TraceItem] = []
     @State private var isLoading = false
     @State private var showPicker = false
+    @State private var errorMsg = ""
 
     var body: some View {
         NavigationView {
@@ -53,15 +61,29 @@ struct ContentView: View {
                 Section {
                     Button("导入HAR文件") { showPicker = true }
                 }
-                if !resultText.isEmpty {
-                    Section("查询结果") {
-                        ScrollView {
-                            Text(resultText)
-                                .font(.system(.footnote, design: .monospaced))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
+                if !errorMsg.isEmpty {
+                    Section("错误") {
+                        Text(errorMsg).foregroundColor(.red)
+                    }
+                }
+                if !traces.isEmpty {
+                    Section("物流详情") {
+                        ForEach(traces) { item in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.time)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(item.title)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                if !item.desc.isEmpty {
+                                    Text(item.desc)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
-                        .frame(height: 300)
                     }
                 }
             }
@@ -76,18 +98,38 @@ struct ContentView: View {
 
     private func doQuery() async {
         isLoading = true
-        resultText = ""
+        traces = []
+        errorMsg = ""
         do {
             let json = try await NetworkManager.shared.query(mailNo: mailNo)
-            if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
-               let s = String(data: data, encoding: .utf8) {
-                resultText = s
-            } else {
-                resultText = "\(json)"
-            }
+            parseTraces(json)
         } catch {
-            resultText = "查询失败: \(error.localizedDescription)"
+            errorMsg = "查询失败: \(error.localizedDescription)"
         }
         isLoading = false
+    }
+
+    private func parseTraces(_ json: [String: Any]) {
+        guard let data = json["data"] as? [String: Any],
+              let list = data["data"] as? [[String: Any]] else {
+            errorMsg = "无物流信息"
+            return
+        }
+
+        var items: [TraceItem] = []
+        for item in list {
+            let time = item["opTime"] as? String ?? ""
+            let title = item["opName"] as? String ?? ""
+            var desc = ""
+            if let org = item["opOrgName"] as? String, !org.isEmpty {
+                desc = org
+            }
+            if let opDesc = item["opDesc"] as? String, !opDesc.isEmpty {
+                if !desc.isEmpty { desc += " - " }
+                desc += opDesc
+            }
+            items.append(TraceItem(time: time, title: title, desc: desc))
+        }
+        traces = items
     }
 }
