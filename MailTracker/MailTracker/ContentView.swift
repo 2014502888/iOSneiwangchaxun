@@ -169,6 +169,7 @@ struct ContentView: View {
                 .padding(.top, 4)
 
                 Button {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     Task { await doQuery() }
                 } label: {
                     HStack {
