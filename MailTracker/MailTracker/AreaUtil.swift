@@ -16,8 +16,12 @@ class AreaUtil {
         }
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: path))
-            // area.json 不是标准 JSON（用单引号），需要转换
+            // area.json 不是标准 JSON（键名无引号、用单引号），需要转换
             var text = String(data: data, encoding: .utf8) ?? ""
+            // 给顶层键名加引号: area0: -> "area0":
+            text = text.replacingOccurrences(of: "area0:", with: "\"area0\":")
+            text = text.replacingOccurrences(of: "area1:", with: "\"area1\":")
+            text = text.replacingOccurrences(of: "area2:", with: "\"area2\":")
             // 替换单引号为双引号
             text = text.replacingOccurrences(of: "'", with: "\"")
             guard let jsonData = text.data(using: .utf8),
