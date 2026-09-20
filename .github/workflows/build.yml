@@ -27,6 +27,7 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
+          ls -la build/Build/Products/Release-iphoneos/MailTracker.app/
 
       - name: Package IPA
         run: |
