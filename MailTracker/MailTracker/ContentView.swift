@@ -395,24 +395,30 @@ struct ContentView: View {
         let start = Date()
 
         await withTaskGroup(of: QueryResult.self) { group in
-            for no in unique {
-                group.addTask {
-                    do {
-                        let json = try await NetworkManager.shared.query(mailNo: no)
-                        return parseTracesToResult(no, json: json)
-                    } catch {
-                        return QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败")
+            var active = 0
+            var index = 0
+            while index < unique.count || active > 0 {
+                while active < 5 && index < unique.count {
+                    let no = unique[index]
+                    group.addTask {
+                        do {
+                            let json = try await NetworkManager.shared.query(mailNo: no)
+                            return parseTracesToResult(no, json: json)
+                        } catch {
+                            return QueryResult(mailNo: no, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败")
+                        }
                     }
+                    active += 1
+                    index += 1
                 }
-            }
-            var done = 0
-            for await r in group {
-                results.append(r)
-                done += 1
-                let success = results.filter { $0.error == nil }.count
-                let fail = results.count - success
-                let elapsed = Date().timeIntervalSince(start)
-                queryStats = "已查询 \(done)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
+                if let r = await group.next() {
+                    results.append(r)
+                    active -= 1
+                    let success = results.filter { $0.error == nil }.count
+                    let fail = results.count - success
+                    let elapsed = Date().timeIntervalSince(start)
+                    queryStats = "已查询 \(results.count)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
+                }
             }
         }
 
