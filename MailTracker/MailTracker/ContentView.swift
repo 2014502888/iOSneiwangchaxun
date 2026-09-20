@@ -46,6 +46,10 @@ struct ContentView: View {
     @State private var showPicker = false
     @State private var errorMsg = ""
     @State private var showDetail = false
+    @State private var infoWeight = ""
+    @State private var infoFee = ""
+    @State private var infoProvince = ""
+    @State private var infoCity = ""
 
     var body: some View {
         NavigationView {
@@ -110,10 +114,10 @@ struct ContentView: View {
                 List {
                     Section("物流信息") {
                         Text("单号: \(mailNo)")
-                        Text("寄达省: \(traces.first?.province ?? "")")
-                        Text("寄达市: \(traces.first?.city ?? "")")
-                        Text("重量: \(traces.first?.weight ?? "")")
-                        Text("资费: \(traces.first?.fee ?? "")")
+                        Text("寄达省: \(infoProvince)")
+                        Text("寄达市: \(infoCity)")
+                        Text("重量: \(infoWeight)")
+                        Text("资费: \(infoFee)")
                         Text("全部节点: \(traces.count)条")
                     }
                     Section("全部轨迹") {
@@ -150,6 +154,10 @@ struct ContentView: View {
         isLoading = true
         traces = []
         errorMsg = ""
+        infoWeight = ""
+        infoFee = ""
+        infoProvince = ""
+        infoCity = ""
         do {
             let json = try await NetworkManager.shared.query(mailNo: mailNo)
             parseTraces(json)
@@ -182,9 +190,40 @@ struct ContentView: View {
         var items: [TraceItem] = []
         for item in l {
             flatten(item, depth: 0, into: &items)
+            extractInfo(item)
         }
         items.sort { $0.time > $1.time }
         traces = items
+    }
+
+    private func extractInfo(_ node: [String: Any]) {
+        if infoWeight.isEmpty {
+            infoWeight = node["mailWeight"] as? String ?? ""
+        }
+        if infoFee.isEmpty {
+            infoFee = node["fee"] as? String ?? ""
+        }
+        if infoProvince.isEmpty {
+            infoProvince = node["opOrgProvName"] as? String ?? ""
+        }
+        if infoCity.isEmpty {
+            infoCity = node["opOrgCity"] as? String ?? ""
+        }
+        if let opDesc = node["opDesc"] as? String {
+            if infoWeight.isEmpty, let range = opDesc.range(of: "重量:") {
+                var s = String(opDesc[range.upperBound...])
+                if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
+                infoWeight = s
+            }
+            if infoFee.isEmpty, let range = opDesc.range(of: "基本资费:") {
+                var s = String(opDesc[range.upperBound...])
+                if let end = s.firstIndex(of: "元") { s = String(s[..<end]) }
+                infoFee = s + "元"
+            }
+        }
+        if let children = node["children"] as? [[String: Any]] {
+            for child in children { extractInfo(child) }
+        }
     }
 
     private func flatten(_ node: [String: Any], depth: Int, into items: inout [TraceItem]) {
