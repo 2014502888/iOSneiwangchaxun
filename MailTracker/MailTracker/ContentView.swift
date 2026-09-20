@@ -110,14 +110,27 @@ struct ContentView: View {
     }
 
     private func parseTraces(_ json: [String: Any]) {
-        guard let data = json["data"] as? [String: Any],
-              let list = data["data"] as? [[String: Any]] else {
-            errorMsg = "无物流信息"
+        var list: [[String: Any]]?
+
+        if let data = json["data"] as? [String: Any],
+           let l = data["data"] as? [[String: Any]] {
+            list = l
+        } else if let l = json["data"] as? [[String: Any]] {
+            list = l
+        }
+
+        guard let l = list, !l.isEmpty else {
+            if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted),
+               let s = String(data: data, encoding: .utf8) {
+                errorMsg = "无物流信息\n\(s)"
+            } else {
+                errorMsg = "无物流信息"
+            }
             return
         }
 
         var items: [TraceItem] = []
-        for item in list {
+        for item in l {
             let time = item["opTime"] as? String ?? ""
             let title = item["opName"] as? String ?? ""
             var desc = ""
