@@ -54,12 +54,16 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("单号（每行一个，自动过滤中文）")
-                        .foregroundColor(.secondary)
+                ZStack(alignment: .topLeading) {
+                    if mailNo.isEmpty {
+                        Text("单号（每行一个，自动过滤中文）")
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                    }
                     TextEditor(text: $mailNo)
-                        .frame(minHeight: 200)
-                        .padding(8)
+                        .frame(height: 120)
+                        .padding(4)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator)))
                 }
                 .padding()
@@ -77,7 +81,7 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.gray)
+                    .background(mailNo.isEmpty ? Color.gray : Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
