@@ -300,7 +300,18 @@ struct ContentView: View {
         guard !traces.isEmpty else { return }
 
         let last = traces[0]
-        let second = traces.count > 1 ? traces[1] : nil
+
+        // 收寄节点：找 opName 含"收寄"的 trace
+        var acceptTrace: TraceItem? = nil
+        for t in traces {
+            if t.title.contains("收寄") {
+                acceptTrace = t
+                break
+            }
+        }
+        if acceptTrace == nil && traces.count > 1 {
+            acceptTrace = traces[traces.count - 2]
+        }
 
         // 寄达地：从所有 trace 的 desc 找"发往:"或"发往："
         var destCity = ""
@@ -321,6 +332,9 @@ struct ContentView: View {
             break
         }
 
+        // 寄达省：通过 area.json 匹配
+        let destProvince = AreaUtil.shared.getProvinceByCity(destCity)
+
         let row: [String] = [
             mailNo,                          // 1. 邮件单号
             last.time,                       // 2. 最后物流更新时间
@@ -332,10 +346,10 @@ struct ContentView: View {
             last.orgName,                    // 8. 所在机构
             last.orgCode,                    // 9. 机构代码
             destCity,                        // 10. 寄达地
-            "",                              // 11. 寄达省（AreaUtil 匹配，先留空）
-            second?.province ?? "",          // 12. 收寄省份
-            second?.city ?? "",              // 13. 收寄城市
-            second?.orgName ?? ""            // 14. 收寄机构
+            destProvince,                    // 11. 寄达省
+            acceptTrace?.province ?? "",     // 12. 收寄省份
+            acceptTrace?.city ?? "",         // 13. 收寄城市
+            acceptTrace?.orgName ?? ""       // 14. 收寄机构
         ]
 
         let data = XLSXExporter.export(rows: [row])
