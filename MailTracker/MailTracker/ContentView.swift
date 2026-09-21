@@ -288,7 +288,11 @@ struct ContentView: View {
                     }
                     HStack {
                         Button {
-                            presentDocumentPicker()
+                            errorMsg = ""
+                            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+                            picker.delegate = PickerDelegate.shared
+                            picker.allowsMultipleSelection = false
+                            UIApplication.shared.windows.first?.rootViewController?.presentedViewController?.present(picker, animated: true)
                         } label: {
                             VStack {
                                 Image(systemName: "doc.badge.gearshape")
@@ -300,9 +304,7 @@ struct ContentView: View {
                         }
                         Button {
                             showSettings = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                exportXLSX()
-                            }
+                            exportXLSX()
                         } label: {
                             VStack {
                                 Image(systemName: "square.and.arrow.up")
