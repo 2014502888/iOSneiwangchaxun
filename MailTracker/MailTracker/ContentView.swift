@@ -245,7 +245,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 inputSection
                 if engine.isQuerying { progressBar }
-                if !engine.results.isEmpty || engine.isQuerying { statsAndTabs }
+                statsAndTabs
                 resultContent
             }
             .toolbar {
@@ -319,8 +319,8 @@ struct ContentView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
-                    .background(engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.blue)
-                    .foregroundColor(.white).cornerRadius(10)
+                    .background(engine.isQuerying ? Color.gray.opacity(0.3) : (engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.blue))
+                    .foregroundColor(engine.isQuerying ? .gray : .white).cornerRadius(10)
                 }
                 .disabled(engine.isQuerying || engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !HarConfig.shared.isConfigured)
 
@@ -413,11 +413,13 @@ struct ContentView: View {
                             }
                         }
                         .padding(.vertical, 4)
-                        Divider().background(Color.gray.opacity(0.2))
                     }
+                    .listRowBackground(Color(.secondarySystemGroupedBackground))
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
             }
-            .listStyle(PlainListStyle())
+            .listStyle(.plain)
         }
     }
 
