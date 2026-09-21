@@ -271,19 +271,21 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
                         Spacer()
-                        HStack(spacing: 4) {
+                        HStack(spacing: 8) {
                             Button {
                                 if concurrency > 1 { concurrency -= 1 }
                             } label: {
                                 Image(systemName: "minus.circle")
-                                    .font(.system(size: 18))
+                                    .font(.system(size: 22))
                             }
+                            .buttonStyle(BorderlessButtonStyle())
                             Button {
                                 if concurrency < 20 { concurrency += 1 }
                             } label: {
                                 Image(systemName: "plus.circle")
-                                    .font(.system(size: 18))
+                                    .font(.system(size: 22))
                             }
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                     }
                     HStack {
