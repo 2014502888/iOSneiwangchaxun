@@ -454,13 +454,19 @@ struct ContentView: View {
         do {
             try data.write(to: url)
             DispatchQueue.main.async {
-                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                if let popover = activityVC.popoverPresentationController {
-                    popover.sourceView = UIApplication.shared.windows.first
-                    popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
-                    popover.permittedArrowDirections = []
+                guard let rootVC = UIApplication.shared.windows.first?.rootViewController else { return }
+                rootVC.dismiss(animated: false) {
+                    let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                    activityVC.completionWithItemsHandler = { _, _, _, _ in
+                        activityVC.dismiss(animated: true)
+                    }
+                    if let popover = activityVC.popoverPresentationController {
+                        popover.sourceView = rootVC.view
+                        popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+                        popover.permittedArrowDirections = []
+                    }
+                    rootVC.present(activityVC, animated: true)
                 }
-                UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true)
             }
         } catch {
             errorMsg = "导出失败: \(error.localizedDescription)"
