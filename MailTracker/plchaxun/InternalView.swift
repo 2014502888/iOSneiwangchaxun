@@ -259,16 +259,6 @@ struct InternalView: View {
                         Image(systemName: "trash").foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
                     Spacer()
-                    HStack(spacing: 8) {
-                        Button { if engine.concurrency > 1 { engine.concurrency -= 1 } } label: {
-                            Image(systemName: "minus.circle.fill").foregroundColor(.blue)
-                        }
-                        Text("\(engine.concurrency)").frame(width: 24).multilineTextAlignment(.center)
-                        Button { if engine.concurrency < 20 { engine.concurrency += 1 } } label: {
-                            Image(systemName: "plus.circle.fill").foregroundColor(.blue)
-                        }
-                    }
-                    Spacer()
                     Button {
                         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
                         picker.delegate = ImportDelegate.shared
@@ -326,6 +316,32 @@ struct InternalView: View {
             .frame(height: 120)
 
             HStack(spacing: 12) {
+                // 🆕 并发数调节（查询中锁定，1~20，默认 2），位置与外网查询一致
+                HStack(spacing: 4) {
+                    Button {
+                        if engine.concurrency > 1 { engine.concurrency -= 1 }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(engine.isQuerying ? Color.gray.opacity(0.4) : Color.blue)
+                    }
+                    .disabled(engine.isQuerying)
+
+                    Text("\(engine.concurrency)并发")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(minWidth: 44)
+
+                    Button {
+                        if engine.concurrency < 20 { engine.concurrency += 1 }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(engine.isQuerying ? Color.gray.opacity(0.4) : Color.blue)
+                    }
+                    .disabled(engine.isQuerying)
+                }
+
                 Button {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     engine.start()
