@@ -278,7 +278,6 @@ struct InternalView: View {
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
-        .tapToDismissKeyboard()
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -386,6 +385,9 @@ struct InternalView: View {
         if currentList.isEmpty {
             VStack(spacing: 12) {
                 Spacer()
+            }
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 Image(systemName: "cube").font(.system(size: 50)).foregroundColor(.secondary)
                 Text("输入单号后点击查询").foregroundColor(.secondary)
                 Spacer()
@@ -422,6 +424,9 @@ struct InternalView: View {
                 }
             }
             .listStyle(.plain)
+            .simultaneousGesture(TapGesture().onEnded {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            })
         }
     }
 

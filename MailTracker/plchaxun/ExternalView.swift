@@ -75,7 +75,6 @@ struct ExternalView: View {
                 selectedMailNums.removeAll()
             }
         }
-        .tapToDismissKeyboard()
         .navigationViewStyle(.stack)
     }
 
@@ -316,6 +315,9 @@ struct ExternalView: View {
             }
         }
         .listStyle(.plain)
+        .simultaneousGesture(TapGesture().onEnded {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        })
     }
 
     // 🆕 底部复制按钮栏
