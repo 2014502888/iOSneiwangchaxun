@@ -308,7 +308,7 @@ struct InternalView: View {
                     .padding(8)
                     .disabled(engine.isQuerying)
             }
-            .frame(height: 160)
+            .frame(height: 250)
 
             // 🆕 提示/状态文字：移到输入框下方
             HStack(spacing: 8) {
