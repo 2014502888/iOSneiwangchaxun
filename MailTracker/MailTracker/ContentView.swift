@@ -124,8 +124,10 @@ struct ContentView: View {
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
+        isPaused = false
     @State private var showSettings = false
     @State private var concurrency = 2
+    @State private var isPaused = false
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -168,24 +170,36 @@ struct ContentView: View {
                 .padding(.horizontal)
                 .padding(.top, 4)
 
-                Button {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    Task { await doQuery() }
-                } label: {
-                    HStack {
-                        if isLoading {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: "magnifyingglass")
-                            Text("查询")
+                HStack(spacing: 12) {
+                    Button {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        Task { await doQuery() }
+                    } label: {
+                        HStack {
+                            if isLoading {
+                                ProgressView().tint(.white)
+                            } else {
+                                Image(systemName: "magnifyingglass")
+                                Text("查询")
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                    if isLoading {
+                        Button {
+                            isPaused = true
+                        } label: {
+                            Image(systemName: "pause.circle.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.red)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
                 }
+                .padding(.horizontal)
                 .padding(.horizontal)
                 .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
@@ -276,33 +290,34 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
-                    Section("查询设置") {
-                        Stepper(value: $concurrency, in: 1...20) {
-                            Text("并发数：\(concurrency)")
-                        }
+                    Stepper(value: $concurrency, in: 1...20) {
+                        Text("并发数 \(concurrency)")
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    Section("操作") {
+                    HStack {
                         Button {
                             showSettings = false
                             showPicker = true
                         } label: {
-                            HStack {
+                            VStack {
                                 Image(systemName: "doc.badge.gearshape")
                                     .foregroundColor(.blue)
-                                Text("导入HAR文件")
-                                Spacer()
+                                Text("导入文件")
+                                    .font(.caption)
                             }
+                            .frame(maxWidth: .infinity)
                         }
                         Button {
                             showSettings = false
                             exportXLSX()
                         } label: {
-                            HStack {
+                            VStack {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(.blue)
-                                Text("导出Excel")
-                                Spacer()
+                                Text("导出文件")
+                                    .font(.caption)
                             }
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -422,6 +437,7 @@ struct ContentView: View {
         results = []
         errorMsg = ""
         queryStats = ""
+        isPaused = false
 
         let info = TrackParsing.parseInputDetailed(mailNo)
         guard !info.valid.isEmpty else {
@@ -457,6 +473,14 @@ struct ContentView: View {
                     }
                     active += 1
                     index += 1
+                }
+                if isPaused {
+                    await withTaskGroup(of: Void.self) { g in
+                        for _ in 0..<active {
+                            g.addTask { await group.next() }
+                        }
+                    }
+                    break
                 }
                 if let r = await group.next() {
                     results.append(r)
