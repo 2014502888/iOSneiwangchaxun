@@ -248,6 +248,7 @@ struct InternalView: View {
                 statsAndTabs
                 resultContent
             }
+            .ignoresSafeArea(.keyboard)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
