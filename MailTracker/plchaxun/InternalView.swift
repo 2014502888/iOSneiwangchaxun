@@ -303,7 +303,7 @@ struct InternalView: View {
     }
 
     private var inputSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 if engine.total > 0 {
                     if engine.isQuerying { Text("\(engine.total) 个正在查询") }
