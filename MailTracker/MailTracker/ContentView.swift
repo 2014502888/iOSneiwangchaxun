@@ -134,8 +134,8 @@ final class QueryEngine: ObservableObject {
         ticker.start { [weak self] in self?.elapsedSeconds = Date().timeIntervalSince(startDate) }
     }
     func cancel() {
-        currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false
         currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false; total = 0; elapsedSeconds = 0
+    }
 
     @MainActor
     private func run(nums: [String], start: Date) async {
@@ -249,9 +249,9 @@ struct ContentView: View {
                 resultContent
             }
             .contentShape(Rectangle())
-            .onTapGesture {
+            .simultaneousGesture(TapGesture().onEnded {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
+            })
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
@@ -419,9 +419,6 @@ struct ContentView: View {
                         .padding(.vertical, 4)
                         Divider().background(Color.gray.opacity(0.2)).padding(.top, 4)
                     }
-                    .listRowBackground(Color(.secondarySystemGroupedBackground))
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color(.secondarySystemGroupedBackground))
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
