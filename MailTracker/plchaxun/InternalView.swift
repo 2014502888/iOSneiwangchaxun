@@ -358,7 +358,7 @@ struct InternalView: View {
                 }
             }
         }
-        .padding(.horizontal).padding(.top, 8).padding(.bottom, 12)
+        .padding(.horizontal).padding(.top, 0).padding(.bottom, 12)
     }
 
     private var progressBar: some View {
