@@ -135,7 +135,7 @@ struct ExternalView: View {
 
             // 查询 + 停止按钮
             HStack(spacing: 12) {
-                // 🆕 并发数调节（查询中锁定，1~20，默认 5）
+                // 🆕 并发数调节（查询中锁定，1~20，默认 8）
                 HStack(spacing: 4) {
                     Button {
                         if engine.concurrency > 1 { engine.concurrency -= 1 }

@@ -11,8 +11,8 @@ final class ExternalQueryEngine: ObservableObject {
     @Published var completed = 0
     @Published var elapsedSeconds: Double = 0
     @Published var successSort: SuccessSort = .traceCountAsc
-    // 🆕 并发查询数：可调 1~20，默认 5（与原来写死的并发数一致）
-    @Published var concurrency = 5
+    // 🆕 并发查询数：可调 1~20，默认 8（实测服务器吞吐约4~5单/秒，8并发性价比最高）
+    @Published var concurrency = 8
 
     @Published private(set) var results: [ExternalMailResult] = []
     // 查询完成时递增，强制结果列表整体重建一次（保证首帧渲染就是最新数据）
@@ -129,7 +129,7 @@ final class ExternalQueryEngine: ObservableObject {
             }
         }
 
-        // 🆕 并发数改为可配置（1~20，界面可调），默认 5
+        // 🆕 并发数改为可配置（1~20，界面可调），默认 8
         let semaphore = AsyncSemaphore(value: max(1, concurrency))
 
         // 用 task group 收集结果
