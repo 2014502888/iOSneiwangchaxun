@@ -248,10 +248,6 @@ struct InternalView: View {
                 statsAndTabs
                 resultContent
             }
-            .onTapGesture {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
-
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
@@ -281,6 +277,9 @@ struct InternalView: View {
                 }
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
+        }
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)

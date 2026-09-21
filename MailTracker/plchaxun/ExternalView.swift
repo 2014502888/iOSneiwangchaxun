@@ -23,10 +23,6 @@ struct ExternalView: View {
                 }
                 resultContent
             }
-            .onTapGesture {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
-
             .navigationTitle("快递查询")
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
@@ -78,6 +74,9 @@ struct ExternalView: View {
                 selectionMode = false
                 selectedMailNums.removeAll()
             }
+        }
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .navigationViewStyle(.stack)
     }
