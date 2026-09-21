@@ -285,7 +285,7 @@ struct InternalView: View {
                 resultContent
             }
 
-            .ignoresSafeArea(edges: .top)
+            .padding(.top, -50)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
