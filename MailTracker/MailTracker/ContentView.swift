@@ -1,11 +1,9 @@
-import SwiftUI
+﻿import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-
 struct DocumentPicker: UIViewControllerRepresentable {
     var onPicked: (URL) -> Void
-    var onCancel: () -> Void = {}
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
@@ -17,22 +15,15 @@ struct DocumentPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked, onCancel: onCancel)
+        Coordinator(onPicked: onPicked)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var onPicked: (URL) -> Void
-        var onCancel: () -> Void
-        init(onPicked: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
-            self.onPicked = onPicked
-            self.onCancel = onCancel
-        }
+        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             onPicked(url)
-        }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            onCancel()
         }
     }
 }
@@ -59,6 +50,7 @@ struct QueryResult: Identifiable {
     var error: String?
 }
 
+// MARK: - 输入解析（按 KDApp 逻辑）
 enum TrackParsing {
     static func isValidMailNum(_ digits: String) -> Bool {
         guard digits.count == 13 else { return false }
@@ -128,13 +120,12 @@ struct ContentView: View {
     @State private var mailNo = ""
     @State private var results: [QueryResult] = []
     @State private var isLoading = false
-    @State private var errorMsg = "
     @State private var showPicker = false
+    @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
     @State private var showSettings = false
     @State private var concurrency = 2
-    @State private var isPaused = false
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -143,7 +134,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                HStack {
+                VStack(alignment: .leading, spacing: 6) {
                     if mailNo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("单号（每行一个，自动过滤中文）")
                             .foregroundColor(.secondary)
@@ -155,11 +146,9 @@ struct ContentView: View {
                         Text("\(success) 个查询成功")
                             .foregroundColor(.secondary)
                     }
-                    Spacer()
-                    if !queryStats.isEmpty {
-                        Text(queryStats)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    if inputInfo.invalid > 0 {
+                        Text("（\(inputInfo.invalid) 个非正确单号）")
+                            .foregroundColor(.red)
                     }
                 }
                 .font(.subheadline)
@@ -179,43 +168,37 @@ struct ContentView: View {
                 .padding(.horizontal)
                 .padding(.top, 4)
 
-                HStack(spacing: 12) {
-                    Button {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        Task { await doQuery() }
-                    } label: {
-                        HStack {
-                            if isLoading {
-                                ProgressView().tint(.white)
-                            } else {
-                                Image(systemName: "magnifyingglass")
-                                Text("查询")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
-
-                    if isLoading {
-                        Button {
-                            isPaused = true
-                        } label: {
-                            Image(systemName: "pause.circle.fill")
-                                .font(.system(size: 36))
-                                .foregroundColor(.red)
+                Button {
+                    Task { await doQuery() }
+                } label: {
+                    HStack {
+                        if isLoading {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "magnifyingglass")
+                            Text("查询")
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
                 }
                 .padding(.horizontal)
+                .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
                 if !errorMsg.isEmpty {
                     Text(errorMsg)
                         .foregroundColor(.red)
                         .padding()
+                }
+
+                if !queryStats.isEmpty {
+                    Text(queryStats)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
                 }
 
                 if results.isEmpty && !isLoading {
@@ -264,7 +247,7 @@ struct ContentView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .navigationBarTitle("快递查询", displayMode: .inline)
+            .navigationTitle("快递查询")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -284,68 +267,41 @@ struct ContentView: View {
                 }
             }
         }
-
         .sheet(isPresented: $showPicker) {
-            DocumentPicker(onPicked: { url in
+            DocumentPicker { url in
                 HarImporter.importHar(from: url)
-            }, onCancel: {
-                showPicker = false
-            })
+            }
         }
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
-                    HStack {
-                        Text("并发数")
-                        Spacer()
-                        Text("\(concurrency)")
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                        Spacer()
-                        HStack(spacing: 8) {
-                            Button {
-                                if concurrency > 1 { concurrency -= 1 }
-                            } label: {
-                                Image(systemName: "minus.circle")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
-                            Button {
-                                if concurrency < 20 { concurrency += 1 }
-                            } label: {
-                                Image(systemName: "plus.circle")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
+                    Section("查询设置") {
+                        Stepper(value: $concurrency, in: 1...20) {
+                            Text("并发数：\(concurrency)")
                         }
                     }
-                    HStack {
+                    Section("操作") {
                         Button {
                             showSettings = false
-                            errorMsg = ""
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                showPicker = true
-                            }
+                            showPicker = true
                         } label: {
-                            VStack {
+                            HStack {
                                 Image(systemName: "doc.badge.gearshape")
                                     .foregroundColor(.blue)
-                                Text("导入文件")
-                                    .font(.caption)
+                                Text("导入HAR文件")
+                                Spacer()
                             }
-                            .frame(maxWidth: .infinity)
                         }
                         Button {
                             showSettings = false
                             exportXLSX()
                         } label: {
-                            VStack {
+                            HStack {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(.blue)
-                                Text("导出文件")
-                                    .font(.caption)
+                                Text("导出Excel")
+                                Spacer()
                             }
-                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -354,7 +310,6 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { showSettings = false }
-                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -401,26 +356,17 @@ struct ContentView: View {
                 .navigationTitle("物流详情")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("返回") { selectedResult = nil }
-                            .foregroundColor(.blue)
-                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { selectedResult = nil }
-                            .foregroundColor(.blue)
                     }
                 }
             }
         }
     }
 
-
     private func exportXLSX() {
         let validResults = results.filter { !$0.traces.isEmpty }
-        guard !validResults.isEmpty else {
-            errorMsg = "没有可导出的数据"
-            return
-        }
+        guard !validResults.isEmpty else { return }
 
         var rows: [[String]] = []
         for r in validResults {
@@ -457,19 +403,13 @@ struct ContentView: View {
         do {
             try data.write(to: url)
             DispatchQueue.main.async {
-                guard let rootVC = UIApplication.shared.windows.first?.rootViewController else { return }
-                rootVC.dismiss(animated: false) {
-                    let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                    activityVC.completionWithItemsHandler = { _, _, _, _ in
-                        activityVC.dismiss(animated: true)
-                    }
-                    if let popover = activityVC.popoverPresentationController {
-                        popover.sourceView = rootVC.view
-                        popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
-                        popover.permittedArrowDirections = []
-                    }
-                    rootVC.present(activityVC, animated: true)
+                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = UIApplication.shared.windows.first
+                    popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
                 }
+                UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true)
             }
         } catch {
             errorMsg = "导出失败: \(error.localizedDescription)"
@@ -481,7 +421,6 @@ struct ContentView: View {
         results = []
         errorMsg = ""
         queryStats = ""
-        isPaused = false
 
         let info = TrackParsing.parseInputDetailed(mailNo)
         guard !info.valid.isEmpty else {
@@ -490,7 +429,9 @@ struct ContentView: View {
             return
         }
 
+        // 去重
         let unique = Array(Set(info.valid)).sorted()
+        let dupCount = info.valid.count - unique.count
         let start = Date()
 
         await withTaskGroup(of: QueryResult.self) { group in
@@ -504,6 +445,7 @@ struct ContentView: View {
                             let json = try await NetworkManager.shared.query(mailNo: no)
                             return parseTracesToResult(no, json: json)
                         } catch {
+                            // 重试一次
                             do {
                                 let json = try await NetworkManager.shared.query(mailNo: no)
                                 return parseTracesToResult(no, json: json)
@@ -515,12 +457,13 @@ struct ContentView: View {
                     active += 1
                     index += 1
                 }
-                if isPaused { break }
                 if let r = await group.next() {
                     results.append(r)
                     active -= 1
+                    let success = results.filter { $0.error == nil }.count
+                    let fail = results.count - success
                     let elapsed = Date().timeIntervalSince(start)
-                    queryStats = "用时\(String(format: "%.1f", elapsed))s"
+                    queryStats = "已查询 \(results.count)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
                 }
             }
         }
@@ -548,6 +491,7 @@ struct ContentView: View {
         }
         items.sort { $0.time > $1.time }
 
+        // 寄达地
         var destCity = ""
         for t in items {
             var s = t.desc
