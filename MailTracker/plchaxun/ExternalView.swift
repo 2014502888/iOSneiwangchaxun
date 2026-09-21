@@ -32,6 +32,17 @@ struct ExternalView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
+                        if UIApplication.shared.isKeyboardVisible {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left").foregroundColor(.blue)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
                         engine.inputText = ""
                         engine.total = 0          // 重置查询计数，标题回到输入提示态
                         engine.elapsedSeconds = 0
