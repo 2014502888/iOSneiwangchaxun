@@ -245,13 +245,7 @@ struct InternalView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                inputSection
-                if engine.isQuerying { progressBar }
-                if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
-                resultContent
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                HStack {
                     Button {
                         if keyboardVisible {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -261,13 +255,10 @@ struct InternalView: View {
                     } label: {
                         Image(systemName: "chevron.left").foregroundColor(.blue)
                     }
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
                         Image(systemName: "trash").foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
-                }
-                ToolbarItem(placement: .principal) {
+                    Spacer()
                     HStack(spacing: 8) {
                         Button { if engine.concurrency > 1 { engine.concurrency -= 1 } } label: {
                             Image(systemName: "minus.circle.fill").foregroundColor(.blue)
@@ -277,8 +268,7 @@ struct InternalView: View {
                             Image(systemName: "plus.circle.fill").foregroundColor(.blue)
                         }
                     }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                    Spacer()
                     Button {
                         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
                         picker.delegate = ImportDelegate.shared
@@ -288,7 +278,13 @@ struct InternalView: View {
                         Image(systemName: "doc.badge.gearshape").foregroundColor(.blue)
                     }
                 }
+                .padding(.horizontal).padding(.vertical, 8)
+                inputSection
+                if engine.isQuerying { progressBar }
+                if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
+                resultContent
             }
+
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
@@ -297,6 +293,7 @@ struct InternalView: View {
             NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
         }
         .navigationBarBackButtonHidden(true)
+        .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
