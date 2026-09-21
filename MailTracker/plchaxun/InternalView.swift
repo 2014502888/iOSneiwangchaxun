@@ -304,9 +304,9 @@ struct InternalView: View {
                 TextEditor(text: $engine.inputText)
                     .font(.system(size: 20))
                     .padding(8)
-                    .frame(height: 100)
                     .disabled(engine.isQuerying)
             }
+            .frame(height: 100)
 
             HStack(spacing: 12) {
                 Button {

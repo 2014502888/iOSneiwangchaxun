@@ -111,9 +111,9 @@ struct ExternalView: View {
                 TextEditor(text: $engine.inputText)
                     .font(.system(size: 20, design: .default))
                     .padding(8)
-                    .frame(height: 100)
                     .disabled(engine.isQuerying)
             }
+            .frame(height: 100)
 
             // 查询 + 停止按钮
             HStack(spacing: 12) {
