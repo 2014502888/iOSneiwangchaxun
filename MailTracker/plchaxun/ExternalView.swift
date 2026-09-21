@@ -116,7 +116,7 @@ struct ExternalView: View {
                     .padding(8)
                     .disabled(engine.isQuerying)
             }
-            .frame(height: 120)
+            .frame(height: 160)
 
             // 🆕 提示/状态文字：移到输入框下方
             HStack(spacing: 8) {
