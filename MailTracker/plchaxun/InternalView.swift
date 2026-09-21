@@ -278,13 +278,14 @@ struct InternalView: View {
                         Image(systemName: "doc.badge.gearshape").foregroundColor(.blue)
                     }
                 }
-                .padding(.horizontal).padding(.vertical, 8)
+                .padding(.horizontal).padding(.top, 0).padding(.bottom, 8)
                 inputSection
                 if engine.isQuerying { progressBar }
                 if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
                 resultContent
             }
 
+            .ignoresSafeArea(edges: .top)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
@@ -295,7 +296,6 @@ struct InternalView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
     }
