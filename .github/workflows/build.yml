@@ -21,8 +21,8 @@ jobs:
         run: |
           set -o pipefail
           cd MailTracker
-          xcodebuild -project MailTracker.xcodeproj \
-                     -scheme MailTracker \
+          xcodebuild -project plchaxun.xcodeproj \
+                     -scheme plchaxun \
                      -configuration Release \
                      -sdk iphoneos \
                      CONFIGURATION_BUILD_DIR="$(pwd)/build" \
@@ -38,12 +38,12 @@ jobs:
       - name: Package IPA
         run: |
           mkdir -p dist Payload
-          cp -R MailTracker/build/MailTracker.app Payload/
-          zip -r dist/MailTracker.ipa Payload/
-          cp -R MailTracker/build/MailTracker.app dist/
+          cp -R plchaxun/build/plchaxun.app Payload/
+          zip -r dist/plchaxun.ipa Payload/
+          cp -R plchaxun/build/plchaxun.app dist/
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: MailTracker-iOS
+          name: plchaxun-iOS
           path: dist/

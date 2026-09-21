@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>MailTracker</string>
+	<string>plchaxun</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.inner.mailtracker</string>
 	<key>CFBundleName</key>
-	<string>MailTracker</string>
+	<string>plchaxun</string>
 	<key>CFBundleDisplayName</key>
-	<string>MailTracker</string>
+	<string>plchaxun</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
