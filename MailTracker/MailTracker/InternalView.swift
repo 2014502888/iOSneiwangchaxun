@@ -13,7 +13,7 @@ class ImportDelegate: NSObject, UIDocumentPickerDelegate {
     }
 }
 
-struct InternalInternalTraceNode: Identifiable {
+struct InternalTraceNode: Identifiable {
     let id = UUID()
     let time: String
     let title: String
@@ -24,7 +24,7 @@ struct InternalInternalTraceNode: Identifiable {
     let orgCode: String
 }
 
-struct InternalInternalMailResult: Identifiable {
+struct InternalMailResult: Identifiable {
     let id = UUID()
     let mailNum: String
     var traces: [InternalTraceNode]
@@ -36,7 +36,7 @@ struct InternalInternalMailResult: Identifiable {
     var isDuplicate: Bool = false
 }
 
-enum InternalInternalResultTab: String, CaseIterable, Identifiable {
+enum InternalResultTab: String, CaseIterable, Identifiable {
     case success, failed, duplicate
     var id: String { rawValue }
 }
@@ -94,7 +94,7 @@ final class InternalAsyncSemaphore {
     }
 }
 
-private final class InternalTicker {
+private final class InternalInternalTicker {
     private var task: Task<Void, Never>?
     func start(interval: TimeInterval = 0.1, _ block: @escaping () -> Void) {
         stop()
@@ -109,7 +109,7 @@ private final class InternalTicker {
     func stop() { task?.cancel(); task = nil }
 }
 
-final class InternalInternalQueryEngine: ObservableObject {
+final class InternalQueryEngine: ObservableObject {
     @Published var inputText = ""
     @Published var isQuerying = false
     @Published var total = 0
@@ -118,7 +118,7 @@ final class InternalInternalQueryEngine: ObservableObject {
     @Published var results: [InternalMailResult] = []
     @Published var concurrency = 2
     private var currentTask: Task<Void, Never>?
-    private let ticker = Ticker()
+    private let ticker = InternalTicker()
 
     var successResults: [InternalMailResult] { results.filter { $0.error == nil && !$0.isDuplicate } }
     var failedResults: [InternalMailResult] { results.filter { $0.error != nil } }
@@ -465,7 +465,7 @@ struct InternalView: View {
     private var formattedElapsed: String { String(format: "%.1f秒", engine.elapsedSeconds) }
 }
 
-struct InternalInternalDetailSheet: View {
+struct InternalDetailSheet: View {
     let result: InternalMailResult
     @Environment(\.dismiss) private var dismiss
     var body: some View {

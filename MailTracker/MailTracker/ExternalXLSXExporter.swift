@@ -76,7 +76,7 @@ enum ExternalXLSXExporter {
             ("xl/worksheets/sheet1.xml", Data(sheetXML(rows: rows).utf8)),
             ("xl/styles.xml", Data(stylesXML.utf8))
         ]
-        return SimpleZip.archive(files: files)
+        return ExternalSimpleZip.archive(files: files)
     }
 
     static func columnLetter(_ index: Int) -> String {
@@ -195,7 +195,7 @@ enum ExternalXLSXExporter {
 }
 
 // MARK: - 手写 ZIP 打包器（store 模式，无压缩）
-struct SimpleZip {
+struct ExternalSimpleZip {
 
     static func archive(files: [(name: String, data: Data)]) -> Data {
         var output = Data()

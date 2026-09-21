@@ -56,7 +56,7 @@ enum InternalHarImporter {
                 return
             }
 
-            HarConfig.shared.save(sessionId: sessionId, userAgent: userAgent)
+            InternalHarConfig.shared.save(sessionId: sessionId, userAgent: userAgent)
             showToast("HAR导入成功，重启App生效")
         } catch {
             showToast("HAR导入失败: \(error.localizedDescription)")
