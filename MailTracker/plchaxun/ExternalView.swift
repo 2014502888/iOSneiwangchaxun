@@ -54,7 +54,7 @@ struct ExternalView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundColor(.blue)
                 }
             }
@@ -66,7 +66,7 @@ struct ExternalView: View {
                     engine.elapsedSeconds = 0
                 } label: {
                     Image(systemName: "trash")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundColor(.blue)
                 }
                 .disabled(engine.inputText.isEmpty)
@@ -78,7 +78,7 @@ struct ExternalView: View {
                         selectionMode = false
                         selectedMailNums.removeAll()
                     }
-                    .font(.title3)
+                    .font(.body)
                     .foregroundColor(.blue)
                 } else {
                     HStack(spacing: 16) {
@@ -88,7 +88,7 @@ struct ExternalView: View {
                                 selectionMode = true
                             } label: {
                                 Image(systemName: "checkmark.circle")
-                                    .font(.title3)
+                                    .font(.body)
                                     .foregroundColor(.blue)
                             }
                         }
@@ -96,7 +96,7 @@ struct ExternalView: View {
                             exportXLSX()
                         } label: {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.title3)
+                                .font(.body)
                                 .foregroundColor(.blue)
                         }
                         .disabled(engine.results.isEmpty)
@@ -110,6 +110,18 @@ struct ExternalView: View {
 
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // 🆕 输入框放在最上面：顶部贴住导航栏下方
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                TextEditor(text: $engine.inputText)
+                    .font(.system(size: 20, design: .default))
+                    .padding(8)
+                    .disabled(engine.isQuerying)
+            }
+            .frame(height: 120)
+
+            // 🆕 提示/状态文字：移到输入框下方
             HStack(spacing: 8) {
                 // 查询中：XX 个正在查询；查询后：已查询数量；输入中：实时有效单号数；空输入：提示文字
                 if engine.total > 0 {
@@ -131,16 +143,6 @@ struct ExternalView: View {
             }
             .font(.subheadline)
             .foregroundColor(.secondary)
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                TextEditor(text: $engine.inputText)
-                    .font(.system(size: 20, design: .default))
-                    .padding(8)
-                    .disabled(engine.isQuerying)
-            }
-            .frame(height: 120)
 
             // 查询 + 停止按钮
             HStack(spacing: 12) {

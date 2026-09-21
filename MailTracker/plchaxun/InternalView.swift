@@ -273,7 +273,7 @@ struct InternalView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundColor(.blue)
                 }
             }
@@ -281,7 +281,7 @@ struct InternalView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
                     Image(systemName: "trash")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundColor(.blue)
                 }
                 .disabled(engine.inputText.isEmpty)
@@ -295,7 +295,7 @@ struct InternalView: View {
                     UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
                 } label: {
                     Image(systemName: "doc.badge.gearshape")
-                        .font(.title3)
+                        .font(.body)
                         .foregroundColor(.blue)
                 }
             }
@@ -304,6 +304,17 @@ struct InternalView: View {
 
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // 🆕 输入框放在最上面：顶部贴住导航栏下方
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                TextEditor(text: $engine.inputText)
+                    .font(.system(size: 20))
+                    .padding(8)
+                    .disabled(engine.isQuerying)
+            }
+            .frame(height: 120)
+
+            // 🆕 提示/状态文字：移到输入框下方
             HStack(spacing: 8) {
                 if engine.total > 0 {
                     if engine.isQuerying { Text("\(engine.total) 个正在查询") }
@@ -317,15 +328,8 @@ struct InternalView: View {
                 }
             }
             .font(.subheadline).foregroundColor(.secondary)
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                TextEditor(text: $engine.inputText)
-                    .font(.system(size: 20))
-                    .padding(8)
-                    .disabled(engine.isQuerying)
-            }
-            .frame(height: 120)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
 
             HStack(spacing: 12) {
                 // 🆕 并发数调节（查询中锁定，1~20，默认 2），位置与外网查询一致
