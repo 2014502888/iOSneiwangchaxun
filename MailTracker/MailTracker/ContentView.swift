@@ -414,6 +414,7 @@ struct ContentView: View {
     }
 
     private func presentDocumentPicker() {
+        errorMsg = ""
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
         picker.delegate = PickerDelegate.shared
         picker.allowsMultipleSelection = false
