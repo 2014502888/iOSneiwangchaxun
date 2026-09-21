@@ -1,6 +1,6 @@
 import Foundation
 
-class InternalInternalHarConfig {
+class InternalHarConfig {
     static let shared = InternalHarConfig()
 
     var sessionId: String = ""

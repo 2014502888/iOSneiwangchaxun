@@ -6,7 +6,7 @@ class ImportDelegate: NSObject, UIDocumentPickerDelegate {
     static let shared = ImportDelegate()
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let url = urls.first else { return }
-        HarImporter.importHar(from: url)
+        InternalHarImporter.importHar(from: url)
     }
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         controller.dismiss(animated: true)
@@ -75,7 +75,7 @@ enum InternalTrackParsing {
     }
 }
 
-final class InternalAsyncSemaphore {
+final class InternalInternalAsyncSemaphore {
     private var count: Int
     private var waiters: [CheckedContinuation<Void, Never>] = []
     private let lock = NSLock()
@@ -94,7 +94,7 @@ final class InternalAsyncSemaphore {
     }
 }
 
-private final class InternalInternalTicker {
+private final class InternalTicker {
     private var task: Task<Void, Never>?
     func start(interval: TimeInterval = 0.1, _ block: @escaping () -> Void) {
         stop()
@@ -142,7 +142,7 @@ final class InternalQueryEngine: ObservableObject {
         defer {
             if !Task.isCancelled { isQuerying = false; ticker.stop(); elapsedSeconds = Date().timeIntervalSince(start) }
         }
-        let semaphore = AsyncSemaphore(value: concurrency)
+        let semaphore = InternalAsyncSemaphore(value: concurrency)
         var collected: [Int: InternalMailResult] = [:]
         await withTaskGroup(of: (Int, InternalMailResult).self) { group in
             for (index, num) in nums.enumerated() {
@@ -203,7 +203,7 @@ final class InternalQueryEngine: ObservableObject {
             if let end = s.firstIndex(of: " ") { s = String(s[..<end]) }
             destCity = s; break
         }
-        let destProvince = AreaUtil.shared.getProvinceByCity(destCity)
+        let destProvince = InternalAreaUtil.shared.getProvinceByCity(destCity)
         return InternalMailResult(mailNum: mailNo, traces: items, weight: weight, fee: fee, destProvince: destProvince, destCity: destCity, error: nil)
     }
 
