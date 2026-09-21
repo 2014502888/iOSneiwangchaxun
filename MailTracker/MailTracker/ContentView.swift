@@ -283,9 +283,27 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
-                    Stepper(value: $concurrency, in: 1...20) {
-                        Text("并发数 \(concurrency)")
-                            .frame(maxWidth: .infinity, alignment: .center)
+                    HStack {
+                        Text("并发数")
+                        Spacer()
+                        Text("\(concurrency)")
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Button {
+                                if concurrency > 1 { concurrency -= 1 }
+                            } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.system(size: 18))
+                            }
+                            Button {
+                                if concurrency < 20 { concurrency += 1 }
+                            } label: {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 18))
+                            }
+                        }
                     }
                     HStack {
                         Button {
