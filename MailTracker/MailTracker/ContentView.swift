@@ -135,7 +135,7 @@ final class QueryEngine: ObservableObject {
     }
     func cancel() {
         currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false
-    }
+        currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false; total = 0; elapsedSeconds = 0
 
     @MainActor
     private func run(nums: [String], start: Date) async {
@@ -247,6 +247,10 @@ struct ContentView: View {
                 if engine.isQuerying { progressBar }
                 statsAndTabs
                 resultContent
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
