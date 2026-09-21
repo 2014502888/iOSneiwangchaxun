@@ -108,7 +108,6 @@ struct ContentView: View {
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
-    @State private var showSettings = false
     @State private var concurrency = 2
     @State private var isPaused = false
 
@@ -240,7 +239,6 @@ struct ContentView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .navigationBarTitle("快递查询", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -250,83 +248,37 @@ struct ContentView: View {
                             .foregroundColor(.blue)
                     }
                 }
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        Button {
+                            if concurrency > 1 { concurrency -= 1 }
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                        Text("\(concurrency)")
+                            .frame(width: 24)
+                            .multilineTextAlignment(.center)
+                        Button {
+                            if concurrency < 20 { concurrency += 1 }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showSettings = true
+                        presentImportPicker()
                     } label: {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "doc.badge.gearshape")
                             .foregroundColor(.blue)
                     }
                 }
             }
         }
 
-        .sheet(isPresented: $showSettings) {
-            NavigationView {
-                List {
-                    HStack {
-                        Text("并发数")
-                        Spacer()
-                        Text("\(concurrency)")
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                        Spacer()
-                        HStack(spacing: 8) {
-                            Button {
-                                if concurrency > 1 { concurrency -= 1 }
-                            } label: {
-                                Image(systemName: "minus.circle")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
-                            Button {
-                                if concurrency < 20 { concurrency += 1 }
-                            } label: {
-                                Image(systemName: "plus.circle")
-                                    .font(.system(size: 22))
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
-                        }
-                    }
-                    HStack {
-                        Button {
-                            showSettings = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                presentImportPicker()
-                            }
-                        } label: {
-                            VStack {
-                                Image(systemName: "doc.badge.gearshape")
-                                    .foregroundColor(.blue)
-                                Text("导入文件")
-                                    .font(.caption)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        Button {
-                            showSettings = false
-                            exportXLSX()
-                        } label: {
-                            VStack {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundColor(.blue)
-                                Text("导出文件")
-                                    .font(.caption)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                }
-                .navigationTitle("设置")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("完成") { showSettings = false }
-                            .foregroundColor(.blue)
-                    }
-                }
-            }
-        }
+
         .sheet(item: $selectedResult) { r in
             NavigationView {
                 List {
