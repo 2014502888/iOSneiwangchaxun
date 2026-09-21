@@ -245,6 +245,25 @@ struct InternalView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // 🆕 导入按钮：最顶部状态栏正下方、右上角（图标放大1号）
+                HStack {
+                    Spacer()
+                    Button {
+                        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+                        picker.delegate = ImportDelegate.shared
+                        picker.allowsMultipleSelection = false
+                        UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
+                    } label: {
+                        Image(systemName: "doc.badge.gearshape")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 0)
+                .padding(.bottom, 6)
+
+                // 返回 + 清空（图标放大1号）
                 HStack {
                     Button {
                         if keyboardVisible {
@@ -253,10 +272,14 @@ struct InternalView: View {
                             presentationMode.wrappedValue.dismiss()
                         }
                     } label: {
-                        Image(systemName: "chevron.left").foregroundColor(.blue)
+                        Image(systemName: "chevron.left")
+                            .font(.title3)
+                            .foregroundColor(.blue)
                     }
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
-                        Image(systemName: "trash").foregroundColor(.blue)
+                        Image(systemName: "trash")
+                            .font(.title3)
+                            .foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
                     Spacer()
                 }
@@ -268,19 +291,6 @@ struct InternalView: View {
             }
 
             .padding(.top, -(UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 1)
-            .overlay(alignment: .topTrailing) {
-                // 🆕 导入按钮固定在状态栏正下方、最右上角（不随下方布局移动）
-                Button {
-                    let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-                    picker.delegate = ImportDelegate.shared
-                    picker.allowsMultipleSelection = false
-                    UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
-                } label: {
-                    Image(systemName: "doc.badge.gearshape").foregroundColor(.blue)
-                }
-                .padding(.top, (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 6)
-                .padding(.trailing, 16)
-            }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
