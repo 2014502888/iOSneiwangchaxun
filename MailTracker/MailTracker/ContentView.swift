@@ -2,39 +2,6 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct DocumentPicker: UIViewControllerRepresentable {
-    var onPicked: (URL) -> Void
-    var onCancel: () -> Void = {}
-
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-        picker.delegate = context.coordinator
-        picker.allowsMultipleSelection = false
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked, onCancel: onCancel)
-    }
-
-    class Coordinator: NSObject, UIDocumentPickerDelegate {
-        var onPicked: (URL) -> Void
-        var onCancel: () -> Void
-        init(onPicked: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
-            self.onPicked = onPicked
-            self.onCancel = onCancel
-        }
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
-            onPicked(url)
-        }
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            onCancel()
-        }
-    }
-}
 
 class PickerDelegate: NSObject, UIDocumentPickerDelegate {
     static let shared = PickerDelegate()
@@ -138,7 +105,6 @@ struct ContentView: View {
     @State private var mailNo = ""
     @State private var results: [QueryResult] = []
     @State private var isLoading = false
-    @State private var showPicker = false
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
