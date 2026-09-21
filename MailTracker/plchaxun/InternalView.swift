@@ -303,7 +303,7 @@ struct InternalView: View {
                 TextEditor(text: $engine.inputText)
                     .font(.system(size: 20))
                     .padding(8)
-                    .frame(height: 100)
+                    .frame(minHeight: 140)
                     .disabled(engine.isQuerying)
             }
 
