@@ -248,7 +248,6 @@ struct InternalView: View {
                 statsAndTabs
                 resultContent
             }
-            .ignoresSafeArea(.keyboard)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
@@ -279,6 +278,7 @@ struct InternalView: View {
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
+        .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
     }
