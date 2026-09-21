@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct ImportDelegate: NSObject, UIDocumentPickerDelegate {
+class ImportDelegate: NSObject, UIDocumentPickerDelegate {
     static let shared = ImportDelegate()
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let url = urls.first else { return }
@@ -149,18 +149,21 @@ final class QueryEngine: ObservableObject {
                 if Task.isCancelled { break }
                 group.addTask {
                     await semaphore.wait()
-                    defer { await semaphore.signal() }
                     if Task.isCancelled {
+                        await semaphore.signal()
                         return (index, MailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "已取消"))
                     }
                     do {
                         let json = try await NetworkManager.shared.query(mailNo: num)
+                        await semaphore.signal()
                         return (index, self.parseResult(num, json: json))
                     } catch {
                         do {
                             let json = try await NetworkManager.shared.query(mailNo: num)
+                            await semaphore.signal()
                             return (index, self.parseResult(num, json: json))
                         } catch {
+                            await semaphore.signal()
                             return (index, MailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败"))
                         }
                     }
@@ -362,15 +365,17 @@ struct ContentView: View {
         .padding(.bottom, 8)
     }
 
+    private var currentList: [MailResult] {
+        switch selectedTab {
+        case .success: return engine.successResults
+        case .failed: return engine.failedResults
+        case .duplicate: return engine.duplicateResults
+        }
+    }
+
     @ViewBuilder
     private var resultContent: some View {
-        let list: [MailResult]
-        switch selectedTab {
-        case .success: list = engine.successResults
-        case .failed: list = engine.failedResults
-        case .duplicate: list = engine.duplicateResults
-        }
-        if list.isEmpty {
+        if currentList.isEmpty {
             VStack(spacing: 12) {
                 Spacer()
                 Image(systemName: "cube").font(.system(size: 50)).foregroundColor(.secondary)
@@ -379,7 +384,7 @@ struct ContentView: View {
             }
         } else {
             List {
-                ForEach(list) { r in
+                ForEach(currentList) { r in
                     Button { selectedResult = r } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.mailNum).font(.system(size: 16, weight: .medium))
