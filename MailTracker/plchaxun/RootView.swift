@@ -6,12 +6,7 @@ struct RootView: View {
             VStack(spacing: 24) {
                 Spacer()
                 Text("选择系统")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 40)
-                    .padding(.vertical, 16)
-                    .background(Color.blue)
-                    .cornerRadius(25)
+                    .font(.title)
                 NavigationLink {
                     InternalView()
                 } label: {
