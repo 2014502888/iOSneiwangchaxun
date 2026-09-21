@@ -432,7 +432,10 @@ struct ContentView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(XLSXExporter.defaultFileName() + ".xlsx")
         do {
             try data.write(to: url)
-            DispatchQueue.main.async {
+        } catch {
+            return
+        }
+        DispatchQueue.main.async {
                 let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
                 if let popover = activityVC.popoverPresentationController {
                     popover.sourceView = UIApplication.shared.windows.first
@@ -441,7 +444,6 @@ struct ContentView: View {
                 }
                 UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true)
             }
-        }
     }
 
     private var formattedElapsed: String { String(format: "%.1f秒", engine.elapsedSeconds) }
