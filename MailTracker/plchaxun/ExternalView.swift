@@ -110,7 +110,7 @@ struct ExternalView: View {
                 TextEditor(text: $engine.inputText)
                     .font(.system(size: 20, design: .default))
                     .padding(8)
-                    .frame(minHeight: 140)
+                    .frame(height: 140)
                     .disabled(engine.isQuerying)
             }
 
