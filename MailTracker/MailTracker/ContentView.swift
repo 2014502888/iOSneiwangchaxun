@@ -332,6 +332,7 @@ struct ContentView: View {
                         }
                         Button {
                             showSettings = false
+                            showPicker = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 exportXLSX()
                             }
