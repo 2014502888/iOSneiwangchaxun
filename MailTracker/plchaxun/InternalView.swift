@@ -242,16 +242,17 @@ struct InternalView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack {
+                Color.clear.onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                VStack(spacing: 0) {
                 inputSection
                 if engine.isQuerying { progressBar }
                 statsAndTabs
                 resultContent
             }
-            .contentShape(Rectangle())
-            .simultaneousGesture(TapGesture().onEnded {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            })
+
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
@@ -281,6 +282,7 @@ struct InternalView: View {
                 }
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
+            }
         }
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
