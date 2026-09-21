@@ -75,9 +75,7 @@ struct ExternalView: View {
                 selectedMailNums.removeAll()
             }
         }
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
+        .tapToDismissKeyboard()
         .navigationViewStyle(.stack)
     }
 

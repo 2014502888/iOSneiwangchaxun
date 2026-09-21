@@ -278,9 +278,7 @@ struct InternalView: View {
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
+        .tapToDismissKeyboard()
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
     }
