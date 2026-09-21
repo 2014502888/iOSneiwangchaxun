@@ -188,7 +188,11 @@ final class InternalQueryEngine: ObservableObject {
         if let data = json["data"] as? [String: Any], let l = data["data"] as? [[String: Any]] { list = l }
         else if let l = json["data"] as? [[String: Any]] { list = l }
         guard let l = list, !l.isEmpty else {
-            return InternalMailResult(mailNum: mailNo, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "无物流信息")
+            // 🆕 诊断：无物流信息时把服务端原始返回带进错误信息，便于定位是空数据/报错/结构变化
+            let raw = (try? JSONSerialization.data(withJSONObject: json, options: []))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            let preview = String(raw.prefix(200))
+            return InternalMailResult(mailNum: mailNo, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "无物流信息  [服务端返回] \(preview)")
         }
         var items: [InternalTraceNode] = []; var weight = ""; var fee = ""
         for item in l { flatten(item, into: &items, weight: &weight, fee: &fee) }
