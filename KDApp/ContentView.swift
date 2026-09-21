@@ -26,6 +26,10 @@ struct ContentView: View {
             .navigationTitle("快递查询")
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
