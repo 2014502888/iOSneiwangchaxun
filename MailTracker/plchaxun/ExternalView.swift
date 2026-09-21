@@ -23,6 +23,10 @@ struct ExternalView: View {
                 }
                 resultContent
             }
+            .contentShape(Rectangle())
+            .simultaneousGesture(TapGesture().onEnded {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            })
             .navigationTitle("快递查询")
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
