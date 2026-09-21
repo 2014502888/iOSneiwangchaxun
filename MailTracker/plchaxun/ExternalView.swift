@@ -4,6 +4,7 @@ import UIKit
 // MARK: - 主界面（按照原应用设计）
 struct ExternalView: View {
 
+    @Environment(\.presentationMode) var presentationMode
     @StateObject private var engine = ExternalQueryEngine()
 
     @State private var selectedTab: ExternalResultTab = .success
