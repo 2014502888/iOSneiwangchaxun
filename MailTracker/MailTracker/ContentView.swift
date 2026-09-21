@@ -400,7 +400,7 @@ struct ContentView: View {
                                 Text(r.traces[0].time).font(.caption).foregroundColor(.secondary)
                                 Text(r.traces[0].title).font(.subheadline).fontWeight(.medium)
                                 if !r.traces[0].desc.isEmpty {
-                                    Text(r.traces[0].desc).font(.caption).foregroundColor(.secondary).lineLimit(2)
+                                    Text(r.traces[0].desc).font(.caption).foregroundColor(.primary).lineLimit(2)
                                 }
                             }
                         }
@@ -471,7 +471,7 @@ struct DetailSheet: View {
                                 Text(item.time).font(.caption).foregroundColor(.blue)
                                 Text(item.title).font(.subheadline).fontWeight(.medium)
                                 if !item.desc.isEmpty {
-                                    Text(item.desc).font(.caption).foregroundColor(.secondary)
+                                    Text(item.desc).font(.caption).foregroundColor(.primary)
                                 }
                             }
                             .padding(.vertical, 4)
