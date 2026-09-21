@@ -18,7 +18,7 @@ enum QueryOutcome: Hashable {
 }
 
 // MARK: - 单个单号的查询结果
-struct ExternalExternalMailResult: Identifiable, Equatable {
+struct ExternalMailResult: Identifiable, Equatable {
     var mailNum: String
     var status: QueryOutcome
     var error: String?
@@ -69,7 +69,7 @@ struct ExternalExternalMailResult: Identifiable, Equatable {
 }
 
 // MARK: - 轨迹节点（界面展示用）
-struct ExternalExternalTraceNode: Identifiable {
+struct ExternalTraceNode: Identifiable {
     let id = UUID()
     let time: String
     let info: String
@@ -136,7 +136,7 @@ let closingKeywords: [String] = [
 ]
 
 // MARK: - 结果标签页
-enum ExternalExternalResultTab: String, CaseIterable, Hashable, Identifiable {
+enum ExternalResultTab: String, CaseIterable, Hashable, Identifiable {
     case success
     case abnormal
     case failed

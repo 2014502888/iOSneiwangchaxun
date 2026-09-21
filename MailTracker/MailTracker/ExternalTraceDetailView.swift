@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 // MARK: - 单号轨迹详情（iOS 版）
-struct ExternalExternalTraceDetailView: View {
+struct ExternalTraceDetailView: View {
 
     let result: ExternalMailResult
     @Environment(\.dismiss) private var dismiss

@@ -3,7 +3,7 @@ import Combine
 import UIKit
 
 // MARK: - 查询引擎
-final class ExternalExternalQueryEngine: ObservableObject {
+final class ExternalQueryEngine: ObservableObject {
 
     @Published var inputText = ""
     @Published var isQuerying = false

@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - 输入解析 / 日期解析 / 轨迹整理
-enum ExternalExternalTrackParsing {
+enum ExternalTrackParsing {
 
     static let dateFormats: [String] = [
         "yyyy-MM-dd HH:mm:ss",
