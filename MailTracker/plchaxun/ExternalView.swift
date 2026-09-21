@@ -25,66 +25,6 @@ struct ExternalView: View {
                 }
                 resultContent
             }
-            .navigationTitle("")
-            .onAppear {
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in keyboardVisible = true }
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .textSelection(.disabled)
-            .ignoresSafeArea(.keyboard)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        if keyboardVisible {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    } label: {
-                        Image(systemName: "chevron.left").foregroundColor(.blue)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        engine.inputText = ""
-                        engine.total = 0          // 重置查询计数，标题回到输入提示态
-                        engine.elapsedSeconds = 0
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundColor(.blue)
-                    }
-                    .disabled(engine.inputText.isEmpty)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if selectionMode {
-                        Button("取消") {
-                            selectionMode = false
-                            selectedMailNums.removeAll()
-                        }
-                        .foregroundColor(.blue)
-                    } else {
-                        HStack(spacing: 16) {
-                            // 🆕 仅成功标签页且有结果时显示多选按钮
-                            if selectedTab == .success && !engine.successResults.isEmpty {
-                                Button {
-                                    selectionMode = true
-                                } label: {
-                                    Image(systemName: "checkmark.circle")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                            Button {
-                                exportXLSX()
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundColor(.blue)
-                            }
-                            .disabled(engine.results.isEmpty)
-                        }
-                    }
-                }
-            }
             .sheet(item: $showingDetail) { result in
                 NavigationView { ExternalTraceDetailView(result: result) }
             }
@@ -93,8 +33,77 @@ struct ExternalView: View {
                 selectedMailNums.removeAll()
             }
         }
+        .navigationTitle("")
+        .onAppear {
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in keyboardVisible = true }
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
+        }
         .navigationBarBackButtonHidden(true)
+        .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
+        .navigationBarTitleDisplayMode(.inline)
+        .textSelection(.disabled)
+        .toolbar {
+            // 🆕 返回：导航栏左侧（状态栏正下方，与内网查询一致）
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    if keyboardVisible {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    } else {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+            }
+            // 🆕 清空：导航栏左侧
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    engine.inputText = ""
+                    engine.total = 0          // 重置查询计数，标题回到输入提示态
+                    engine.elapsedSeconds = 0
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+                .disabled(engine.inputText.isEmpty)
+            }
+            // 🆕 多选/导出：导航栏右侧（状态栏正下方、右上角，与内网查询一致）
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if selectionMode {
+                    Button("取消") {
+                        selectionMode = false
+                        selectedMailNums.removeAll()
+                    }
+                    .font(.title3)
+                    .foregroundColor(.blue)
+                } else {
+                    HStack(spacing: 16) {
+                        // 🆕 仅成功标签页且有结果时显示多选按钮
+                        if selectedTab == .success && !engine.successResults.isEmpty {
+                            Button {
+                                selectionMode = true
+                            } label: {
+                                Image(systemName: "checkmark.circle")
+                                    .font(.title3)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        Button {
+                            exportXLSX()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.title3)
+                                .foregroundColor(.blue)
+                        }
+                        .disabled(engine.results.isEmpty)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - 输入区
@@ -202,7 +211,7 @@ struct ExternalView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, 8)
+        .padding(.top, 0)
         .padding(.bottom, 12)
     }
 
