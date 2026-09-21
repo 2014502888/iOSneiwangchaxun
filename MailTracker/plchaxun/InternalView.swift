@@ -245,58 +245,12 @@ struct InternalView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // 🆕 导入按钮：最顶部状态栏正下方、右上角（图标放大1号，点击区域44pt）
-                HStack {
-                    Spacer()
-                    Button {
-                        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-                        picker.delegate = ImportDelegate.shared
-                        picker.allowsMultipleSelection = false
-                        UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
-                    } label: {
-                        Image(systemName: "doc.badge.gearshape")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 0)
-                .padding(.bottom, 6)
-
-                // 返回 + 清空（图标放大1号，点击区域44pt）
-                HStack {
-                    Button {
-                        if keyboardVisible {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
-                        Image(systemName: "trash")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }.disabled(engine.inputText.isEmpty)
-                    Spacer()
-                }
-                .padding(.horizontal).padding(.top, 0).padding(.bottom, 8)
                 inputSection
                 if engine.isQuerying { progressBar }
                 if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
                 resultContent
             }
 
-            .padding(.top, 1)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
@@ -305,10 +259,47 @@ struct InternalView: View {
             NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
         }
         .navigationBarBackButtonHidden(true)
-        .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // 🆕 返回：导航栏左侧（状态栏正下方）
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    if keyboardVisible {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    } else {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+            }
+            // 🆕 清空：导航栏左侧
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
+                    Image(systemName: "trash")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+                .disabled(engine.inputText.isEmpty)
+            }
+            // 🆕 导入：导航栏右侧（状态栏正下方、右上角）
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+                    picker.delegate = ImportDelegate.shared
+                    picker.allowsMultipleSelection = false
+                    UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
+                } label: {
+                    Image(systemName: "doc.badge.gearshape")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+            }
+        }
     }
 
     private var inputSection: some View {
