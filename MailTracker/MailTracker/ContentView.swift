@@ -250,7 +250,7 @@ struct ContentView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button { engine.inputText = ""; engine.results = [] } label: {
+                    Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
                         Image(systemName: "trash").foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
                 }
