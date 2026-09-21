@@ -50,7 +50,6 @@ struct QueryResult: Identifiable {
     var error: String?
 }
 
-// MARK: - 输入解析（按 KDApp 逻辑）
 enum TrackParsing {
     static func isValidMailNum(_ digits: String) -> Bool {
         guard digits.count == 13 else { return false }
@@ -135,7 +134,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
+                HStack {
                     if mailNo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("单号（每行一个，自动过滤中文）")
                             .foregroundColor(.secondary)
@@ -147,9 +146,11 @@ struct ContentView: View {
                         Text("\(success) 个查询成功")
                             .foregroundColor(.secondary)
                     }
-                    if inputInfo.invalid > 0 {
-                        Text("（\(inputInfo.invalid) 个非正确单号）")
-                            .foregroundColor(.red)
+                    Spacer()
+                    if !queryStats.isEmpty {
+                        Text(queryStats)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .font(.subheadline)
@@ -188,31 +189,24 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
+                    .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+
                     if isLoading {
                         Button {
                             isPaused = true
                         } label: {
                             Image(systemName: "pause.circle.fill")
-                                .font(.system(size: 40))
+                                .font(.system(size: 36))
                                 .foregroundColor(.red)
                         }
                     }
                 }
                 .padding(.horizontal)
-                .padding(.horizontal)
-                .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
                 if !errorMsg.isEmpty {
                     Text(errorMsg)
                         .foregroundColor(.red)
                         .padding()
-                }
-
-                if !queryStats.isEmpty {
-                    Text(queryStats)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
                 }
 
                 if results.isEmpty && !isLoading {
@@ -261,7 +255,7 @@ struct ContentView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .navigationTitle("快递查询")
+            .navigationBarTitle("快递查询", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -325,6 +319,7 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { showSettings = false }
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -371,8 +366,13 @@ struct ContentView: View {
                 .navigationTitle("物流详情")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("返回") { selectedResult = nil }
+                            .foregroundColor(.blue)
+                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { selectedResult = nil }
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -445,9 +445,7 @@ struct ContentView: View {
             return
         }
 
-        // 去重
         let unique = Array(Set(info.valid)).sorted()
-        let dupCount = info.valid.count - unique.count
         let start = Date()
 
         await withTaskGroup(of: QueryResult.self) { group in
@@ -461,7 +459,6 @@ struct ContentView: View {
                             let json = try await NetworkManager.shared.query(mailNo: no)
                             return parseTracesToResult(no, json: json)
                         } catch {
-                            // 重试一次
                             do {
                                 let json = try await NetworkManager.shared.query(mailNo: no)
                                 return parseTracesToResult(no, json: json)
@@ -477,8 +474,6 @@ struct ContentView: View {
                 if let r = await group.next() {
                     results.append(r)
                     active -= 1
-                    let success = results.filter { $0.error == nil }.count
-                    let fail = results.count - success
                     let elapsed = Date().timeIntervalSince(start)
                     queryStats = "用时\(String(format: "%.1f", elapsed))s"
                 }
@@ -508,7 +503,6 @@ struct ContentView: View {
         }
         items.sort { $0.time > $1.time }
 
-        // 寄达地
         var destCity = ""
         for t in items {
             var s = t.desc
