@@ -36,6 +36,17 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 }
 
+class PickerDelegate: NSObject, UIDocumentPickerDelegate {
+    static let shared = PickerDelegate()
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        HarImporter.importHar(from: url)
+    }
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        controller.dismiss(animated: true)
+    }
+}
+
 struct TraceItem: Identifiable {
     let id = UUID()
     let time: String
@@ -283,13 +294,7 @@ struct ContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showPicker) {
-            DocumentPicker(onPicked: { url in
-                HarImporter.importHar(from: url)
-            }, onCancel: {
-                showPicker = false
-            })
-        }
+
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
@@ -317,10 +322,7 @@ struct ContentView: View {
                     }
                     HStack {
                         Button {
-                            showSettings = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                showPicker = true
-                            }
+                            presentDocumentPicker()
                         } label: {
                             VStack {
                                 Image(systemName: "doc.badge.gearshape")
@@ -332,7 +334,6 @@ struct ContentView: View {
                         }
                         Button {
                             showSettings = false
-                            showPicker = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 exportXLSX()
                             }
@@ -410,6 +411,13 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    private func presentDocumentPicker() {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+        picker.delegate = PickerDelegate.shared
+        picker.allowsMultipleSelection = false
+        UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
     }
 
     private func exportXLSX() {
