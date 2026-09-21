@@ -415,6 +415,7 @@ struct ContentView: View {
                         Divider().background(Color.gray.opacity(0.2))
                     }
                 }
+            }
             .listStyle(PlainListStyle())
         }
     }

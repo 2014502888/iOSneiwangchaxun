@@ -1,53 +1,46 @@
-name: Build KDApp (iOS)
+name: Build iOS
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show toolchain
-        run: xcodebuild -version && sw_vers
+      - name: Setup XcodeGen
+        run: brew install xcodegen
 
-      - name: Build iOS (Release, no sign)
+      - name: Generate project
+        run: cd MailTracker && xcodegen generate
+
+      - name: Build
         run: |
-          set -o pipefail
-          xcodebuild -project KDApp.xcodeproj \
-                     -target KDApp \
-                     -configuration Release \
-                     -sdk iphoneos \
-                     CONFIGURATION_BUILD_DIR="$(pwd)/build" \
-                     CODE_SIGN_IDENTITY="" \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGNING_ALLOWED=NO \
-                     build 2>&1 | tee build.log || {
-            echo ""
-            echo "==================== 编译错误信息 ===================="
-            grep -n "error:" build.log || echo "未找到 error: 行"
-            echo "==================== 日志最后 100 行 ===================="
-            tail -100 build.log
-            exit 1
-          }
-        shell: bash
+          cd MailTracker
+          xcodebuild -project MailTracker.xcodeproj \
+            -scheme MailTracker \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+          ls build/Build/Products/Release-iphoneos/MailTracker.app/
+          ls build/Build/Products/Release-iphoneos/MailTracker.app/Frameworks/ || echo "No Frameworks"
 
       - name: Package IPA
         run: |
-          ls -la build/
-          mkdir -p dist Payload
-          cp -R build/KDApp.app Payload/
-          zip -r dist/KDApp.ipa Payload
-          cp -R build/KDApp.app dist/KDApp.app
-          echo "---- 产物清单 ----"
-          ls -la dist/
+          cd MailTracker/build/Build/Products/Release-iphoneos
+          mkdir -p Payload
+          cp -r MailTracker.app Payload/
+          zip -r ../../../../MailTracker.ipa Payload
+          ls -la ../../../../MailTracker.ipa
 
-      - name: Upload artifact
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: KDApp-iOS
-          path: dist/
+          name: MailTracker-IPA
+          path: MailTracker/MailTracker.ipa
