@@ -272,14 +272,6 @@ struct ExternalView: View {
     private var emptyPlaceholder: some View {
         VStack(spacing: 12) {
             Spacer()
-            Image(systemName: "cube")
-                .font(.system(size: 50))
-                .foregroundColor(.secondary)
-                .onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
-            Text("输入单号后点击查询")
-                .font(.title3)
-                .foregroundColor(.secondary)
-                .onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
