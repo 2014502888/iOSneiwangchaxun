@@ -285,7 +285,7 @@ struct InternalView: View {
                 resultContent
             }
 
-            .padding(.top, -50)
+            .padding(.top, 5)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
