@@ -113,7 +113,7 @@ struct ExternalView: View {
                     .padding(8)
                     .disabled(engine.isQuerying)
             }
-            .frame(height: 100)
+            .frame(height: 120)
 
             // 查询 + 停止按钮
             HStack(spacing: 12) {

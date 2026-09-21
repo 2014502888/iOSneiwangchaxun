@@ -306,7 +306,7 @@ struct InternalView: View {
                     .padding(8)
                     .disabled(engine.isQuerying)
             }
-            .frame(height: 100)
+            .frame(height: 120)
 
             HStack(spacing: 12) {
                 Button {
