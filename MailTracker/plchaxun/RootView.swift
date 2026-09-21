@@ -5,6 +5,13 @@ struct RootView: View {
         NavigationView {
             VStack(spacing: 24) {
                 Spacer()
+                Text("选择系统")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 16)
+                    .background(Color.blue)
+                    .cornerRadius(25)
                 NavigationLink {
                     InternalView()
                 } label: {
@@ -29,7 +36,7 @@ struct RootView: View {
                 }
                 Spacer()
             }
-            .navigationTitle("快递查询")
+            .navigationTitle("批量查询")
             .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
