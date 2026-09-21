@@ -265,12 +265,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        exportXLSX()
-                    } label: {
-                        Text("导出数据").foregroundColor(.blue)
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
                         picker.delegate = ImportDelegate.shared
@@ -359,6 +354,12 @@ struct ContentView: View {
                 Text("成功 \(engine.successResults.count)，失败 \(engine.failedResults.count)，重复 \(engine.duplicateResults.count)")
                     .font(.caption).foregroundColor(.secondary)
                 Spacer()
+                Button {
+                    exportXLSX()
+                } label: {
+                    Text("导出数据").font(.caption).foregroundColor(.blue)
+                }
+                .disabled(engine.results.isEmpty)
             }.padding(.horizontal)
             Picker("结果", selection: $selectedTab) {
                 Text("成功 (\(engine.successResults.count))").tag(ResultTab.success)
