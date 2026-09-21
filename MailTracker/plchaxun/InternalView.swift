@@ -243,15 +243,11 @@ struct InternalView: View {
     @State private var selectedResult: InternalMailResult?
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                inputSection
-                if engine.isQuerying { progressBar }
-                if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
-                resultContent
-            }
-
-            .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
+        VStack(spacing: 0) {
+            inputSection
+            if engine.isQuerying { progressBar }
+            if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
+            resultContent
         }
         .navigationTitle("")
         .onAppear {
@@ -260,7 +256,6 @@ struct InternalView: View {
         }
         .navigationBarBackButtonHidden(true)
         .ignoresSafeArea(.keyboard)
-        .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // 🆕 返回：导航栏左侧（状态栏正下方）
@@ -300,6 +295,7 @@ struct InternalView: View {
                 }
             }
         }
+        .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
     }
 
     private var inputSection: some View {

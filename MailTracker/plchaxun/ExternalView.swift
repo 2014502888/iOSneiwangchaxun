@@ -16,22 +16,13 @@ struct ExternalView: View {
     @State private var selectedMailNums = Set<String>()
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                inputSection
-                if engine.isQuerying { progressBar }
-                if !engine.results.isEmpty || engine.isQuerying {
-                    statsAndTabs
-                }
-                resultContent
+        VStack(spacing: 0) {
+            inputSection
+            if engine.isQuerying { progressBar }
+            if !engine.results.isEmpty || engine.isQuerying {
+                statsAndTabs
             }
-            .sheet(item: $showingDetail) { result in
-                NavigationView { ExternalTraceDetailView(result: result) }
-            }
-            .onChange(of: selectedTab) { _ in
-                selectionMode = false
-                selectedMailNums.removeAll()
-            }
+            resultContent
         }
         .navigationTitle("")
         .onAppear {
@@ -40,7 +31,6 @@ struct ExternalView: View {
         }
         .navigationBarBackButtonHidden(true)
         .ignoresSafeArea(.keyboard)
-        .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
         .textSelection(.disabled)
         .toolbar {
@@ -103,6 +93,13 @@ struct ExternalView: View {
                     }
                 }
             }
+        }
+        .sheet(item: $showingDetail) { result in
+            NavigationView { ExternalTraceDetailView(result: result) }
+        }
+        .onChange(of: selectedTab) { _ in
+            selectionMode = false
+            selectedMailNums.removeAll()
         }
     }
 
