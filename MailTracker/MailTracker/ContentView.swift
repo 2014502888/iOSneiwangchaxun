@@ -480,7 +480,7 @@ struct ContentView: View {
                     let success = results.filter { $0.error == nil }.count
                     let fail = results.count - success
                     let elapsed = Date().timeIntervalSince(start)
-                    queryStats = "已查询 \(results.count)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
+                    queryStats = "用时\(String(format: "%.1f", elapsed))s"
                 }
             }
         }
