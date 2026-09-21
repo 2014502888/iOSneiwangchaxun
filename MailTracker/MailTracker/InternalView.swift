@@ -75,7 +75,7 @@ enum InternalTrackParsing {
     }
 }
 
-final class InternalInternalAsyncSemaphore {
+final class InternalAsyncSemaphore {
     private var count: Int
     private var waiters: [CheckedContinuation<Void, Never>] = []
     private let lock = NSLock()
@@ -326,7 +326,7 @@ struct InternalView: View {
                     .background(engine.isQuerying ? Color.gray.opacity(0.3) : (engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.blue))
                     .foregroundColor(engine.isQuerying ? .gray : .white).cornerRadius(10)
                 }
-                .disabled(engine.isQuerying || engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !HarConfig.shared.isConfigured)
+                .disabled(engine.isQuerying || engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !InternalHarConfig.shared.isConfigured)
 
                 if engine.isQuerying {
                     Button { engine.cancel() } label: {
@@ -444,8 +444,8 @@ struct InternalView: View {
                 acceptTrace?.province ?? "", acceptTrace?.city ?? "", acceptTrace?.orgName ?? ""
             ])
         }
-        let data = XLSXExporter.export(rows: rows)
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(XLSXExporter.defaultFileName() + ".xlsx")
+        let data = InternalXLSXExporter.export(rows: rows)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(InternalXLSXExporter.defaultFileName() + ".xlsx")
         do {
             try data.write(to: url)
         } catch {
