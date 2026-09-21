@@ -3,14 +3,37 @@ import UIKit
 import UniformTypeIdentifiers
 
 
-class PickerDelegate: NSObject, UIDocumentPickerDelegate {
-    static let shared = PickerDelegate()
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        guard let url = urls.first else { return }
-        HarImporter.importHar(from: url)
+struct DocumentPicker: UIViewControllerRepresentable {
+    var onPicked: (URL) -> Void
+    var onCancel: () -> Void = {}
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+        picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = false
+        return picker
     }
-    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        controller.dismiss(animated: true)
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPicked: onPicked, onCancel: onCancel)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        var onPicked: (URL) -> Void
+        var onCancel: () -> Void
+        init(onPicked: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
+            self.onPicked = onPicked
+            self.onCancel = onCancel
+        }
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPicked(url)
+        }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onCancel()
+        }
     }
 }
 
@@ -105,7 +128,8 @@ struct ContentView: View {
     @State private var mailNo = ""
     @State private var results: [QueryResult] = []
     @State private var isLoading = false
-    @State private var errorMsg = ""
+    @State private var errorMsg = "
+    @State private var showPicker = false
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
     @State private var showSettings = false
@@ -261,6 +285,13 @@ struct ContentView: View {
             }
         }
 
+        .sheet(isPresented: $showPicker) {
+            DocumentPicker(onPicked: { url in
+                HarImporter.importHar(from: url)
+            }, onCancel: {
+                showPicker = false
+            })
+        }
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
@@ -290,11 +321,11 @@ struct ContentView: View {
                     }
                     HStack {
                         Button {
+                            showSettings = false
                             errorMsg = ""
-                            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-                            picker.delegate = PickerDelegate.shared
-                            picker.allowsMultipleSelection = false
-                            UIApplication.shared.windows.first?.rootViewController?.presentedViewController?.present(picker, animated: true)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showPicker = true
+                            }
                         } label: {
                             VStack {
                                 Image(systemName: "doc.badge.gearshape")
@@ -383,13 +414,6 @@ struct ContentView: View {
         }
     }
 
-    private func presentDocumentPicker() {
-        errorMsg = ""
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-        picker.delegate = PickerDelegate.shared
-        picker.allowsMultipleSelection = false
-        UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
-    }
 
     private func exportXLSX() {
         let validResults = results.filter { !$0.traces.isEmpty }
