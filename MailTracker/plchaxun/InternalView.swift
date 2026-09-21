@@ -259,14 +259,6 @@ struct InternalView: View {
                         Image(systemName: "trash").foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
                     Spacer()
-                    Button {
-                        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-                        picker.delegate = ImportDelegate.shared
-                        picker.allowsMultipleSelection = false
-                        UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
-                    } label: {
-                        Image(systemName: "doc.badge.gearshape").foregroundColor(.blue)
-                    }
                 }
                 .padding(.horizontal).padding(.top, 0).padding(.bottom, 8)
                 inputSection
@@ -276,6 +268,19 @@ struct InternalView: View {
             }
 
             .padding(.top, -(UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 1)
+            .overlay(alignment: .topTrailing) {
+                // 🆕 导入按钮固定在状态栏正下方、最右上角（不随下方布局移动）
+                Button {
+                    let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+                    picker.delegate = ImportDelegate.shared
+                    picker.allowsMultipleSelection = false
+                    UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
+                } label: {
+                    Image(systemName: "doc.badge.gearshape").foregroundColor(.blue)
+                }
+                .padding(.top, (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 6)
+                .padding(.trailing, 16)
+            }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
