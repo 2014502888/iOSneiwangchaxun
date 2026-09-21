@@ -339,10 +339,6 @@ struct InternalView: View {
                     }
                 }
             }
-            Image(systemName: "cube")
-                .font(.system(size: 30))
-                .foregroundColor(.secondary)
-                .onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
         }
         .padding(.horizontal).padding(.top, 8).padding(.bottom, 12)
     }
@@ -391,7 +387,6 @@ struct InternalView: View {
         if currentList.isEmpty {
             VStack(spacing: 12) {
                 Spacer()
-                Text("输入单号后点击查询").foregroundColor(.secondary)
                 Spacer()
             }
         } else {

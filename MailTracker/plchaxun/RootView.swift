@@ -36,7 +36,7 @@ struct RootView: View {
                 }
                 Spacer()
             }
-            .navigationTitle("批量查询")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
