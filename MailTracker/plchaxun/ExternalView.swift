@@ -135,6 +135,32 @@ struct ExternalView: View {
 
             // 查询 + 停止按钮
             HStack(spacing: 12) {
+                // 🆕 并发数调节（查询中锁定，1~20，默认 5）
+                HStack(spacing: 4) {
+                    Button {
+                        if engine.concurrency > 1 { engine.concurrency -= 1 }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(engine.isQuerying ? Color.gray.opacity(0.4) : Color.blue)
+                    }
+                    .disabled(engine.isQuerying)
+
+                    Text("\(engine.concurrency)并发")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(minWidth: 44)
+
+                    Button {
+                        if engine.concurrency < 20 { engine.concurrency += 1 }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(engine.isQuerying ? Color.gray.opacity(0.4) : Color.blue)
+                    }
+                    .disabled(engine.isQuerying)
+                }
+
                 // 查询按钮
                 Button {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
