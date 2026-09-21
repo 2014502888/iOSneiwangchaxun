@@ -245,7 +245,7 @@ struct InternalView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // 🆕 导入按钮：最顶部状态栏正下方、右上角（图标放大1号）
+                // 🆕 导入按钮：最顶部状态栏正下方、右上角（图标放大1号，点击区域44pt）
                 HStack {
                     Spacer()
                     Button {
@@ -257,13 +257,15 @@ struct InternalView: View {
                         Image(systemName: "doc.badge.gearshape")
                             .font(.title3)
                             .foregroundColor(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 0)
                 .padding(.bottom, 6)
 
-                // 返回 + 清空（图标放大1号）
+                // 返回 + 清空（图标放大1号，点击区域44pt）
                 HStack {
                     Button {
                         if keyboardVisible {
@@ -275,11 +277,15 @@ struct InternalView: View {
                         Image(systemName: "chevron.left")
                             .font(.title3)
                             .foregroundColor(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
                         Image(systemName: "trash")
                             .font(.title3)
                             .foregroundColor(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }.disabled(engine.inputText.isEmpty)
                     Spacer()
                 }
@@ -290,7 +296,7 @@ struct InternalView: View {
                 resultContent
             }
 
-            .padding(.top, -(UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 1)
+            .padding(.top, 1)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
