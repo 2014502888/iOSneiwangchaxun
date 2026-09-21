@@ -26,6 +26,7 @@ struct ExternalView: View {
             .navigationTitle("快递查询")
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -501,6 +502,7 @@ struct ExternalResultRow: View {
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(4)
                         .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
 
                     if let durationBetween = traceDurationBetween {
                         Text(durationBetween)
@@ -511,6 +513,7 @@ struct ExternalResultRow: View {
                             .background(Color.blue.opacity(0.1))
                             .cornerRadius(4)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
 
                     Spacer()
@@ -519,26 +522,32 @@ struct ExternalResultRow: View {
                     if result.isAbnormal {
                         tagLabel("异常", color: .red)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                     if result.status == .duplicate || result.isDuplicate {
                         tagLabel("重复", color: .yellow)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                     if result.isRejected {
                         tagLabel("拒收", color: .orange)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                     if result.isCancelled {
                         tagLabel("撤单", color: .green)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                     if result.isChangedAddr {
                         tagLabel("改址", color: .purple)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                     if result.isIntercepted {
                         tagLabel("取消", color: .red)
                             .textSelection(.disabled)
+            .ignoresSafeArea(.keyboard)
                     }
                 }
             }
