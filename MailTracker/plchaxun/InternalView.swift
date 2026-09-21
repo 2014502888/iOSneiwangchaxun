@@ -339,6 +339,10 @@ struct InternalView: View {
                     }
                 }
             }
+            Image(systemName: "cube")
+                .font(.system(size: 30))
+                .foregroundColor(.secondary)
+                .onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
         }
         .padding(.horizontal).padding(.top, 8).padding(.bottom, 12)
     }
