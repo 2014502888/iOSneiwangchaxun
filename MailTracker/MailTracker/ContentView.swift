@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct DocumentPicker: UIViewControllerRepresentable {
     var onPicked: (URL) -> Void
+    var onCancel: () -> Void = {}
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
@@ -15,15 +16,22 @@ struct DocumentPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked)
+        Coordinator(onPicked: onPicked, onCancel: onCancel)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var onPicked: (URL) -> Void
-        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
+        var onCancel: () -> Void
+        init(onPicked: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
+            self.onPicked = onPicked
+            self.onCancel = onCancel
+        }
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             onPicked(url)
+        }
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onCancel()
         }
     }
 }
@@ -276,9 +284,11 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showPicker) {
-            DocumentPicker { url in
+            DocumentPicker(onPicked: { url in
                 HarImporter.importHar(from: url)
-            }
+            }, onCancel: {
+                showPicker = false
+            })
         }
         .sheet(isPresented: $showSettings) {
             NavigationView {
@@ -308,7 +318,9 @@ struct ContentView: View {
                     HStack {
                         Button {
                             showSettings = false
-                            showPicker = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showPicker = true
+                            }
                         } label: {
                             VStack {
                                 Image(systemName: "doc.badge.gearshape")
@@ -320,7 +332,9 @@ struct ContentView: View {
                         }
                         Button {
                             showSettings = false
-                            exportXLSX()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                exportXLSX()
+                            }
                         } label: {
                             VStack {
                                 Image(systemName: "square.and.arrow.up")
@@ -399,7 +413,10 @@ struct ContentView: View {
 
     private func exportXLSX() {
         let validResults = results.filter { !$0.traces.isEmpty }
-        guard !validResults.isEmpty else { return }
+        guard !validResults.isEmpty else {
+            errorMsg = "没有可导出的数据"
+            return
+        }
 
         var rows: [[String]] = []
         for r in validResults {
