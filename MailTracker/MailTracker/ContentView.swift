@@ -473,14 +473,7 @@ struct ContentView: View {
                     active += 1
                     index += 1
                 }
-                if isPaused {
-                    await withTaskGroup(of: Void.self) { g in
-                        for _ in 0..<active {
-                            g.addTask { await group.next() }
-                        }
-                    }
-                    break
-                }
+                if isPaused { break }
                 if let r = await group.next() {
                     results.append(r)
                     active -= 1
