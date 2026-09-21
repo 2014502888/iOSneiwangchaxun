@@ -50,7 +50,6 @@ struct QueryResult: Identifiable {
     var error: String?
 }
 
-// MARK: - 输入解析（按 KDApp 逻辑）
 enum TrackParsing {
     static func isValidMailNum(_ digits: String) -> Bool {
         guard digits.count == 13 else { return false }
@@ -126,6 +125,7 @@ struct ContentView: View {
     @State private var queryStats = ""
     @State private var showSettings = false
     @State private var concurrency = 2
+    @State private var isPaused = false
 
     private var inputInfo: (valid: [String], invalid: Int) {
         TrackParsing.parseInputDetailed(mailNo)
@@ -134,7 +134,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
+                HStack {
                     if mailNo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("单号（每行一个，自动过滤中文）")
                             .foregroundColor(.secondary)
@@ -146,9 +146,11 @@ struct ContentView: View {
                         Text("\(success) 个查询成功")
                             .foregroundColor(.secondary)
                     }
-                    if inputInfo.invalid > 0 {
-                        Text("（\(inputInfo.invalid) 个非正确单号）")
-                            .foregroundColor(.red)
+                    Spacer()
+                    if !queryStats.isEmpty {
+                        Text(queryStats)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .font(.subheadline)
@@ -168,37 +170,43 @@ struct ContentView: View {
                 .padding(.horizontal)
                 .padding(.top, 4)
 
-                Button {
-                    Task { await doQuery() }
-                } label: {
-                    HStack {
-                        if isLoading {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: "magnifyingglass")
-                            Text("查询")
+                HStack(spacing: 12) {
+                    Button {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        Task { await doQuery() }
+                    } label: {
+                        HStack {
+                            if isLoading {
+                                ProgressView().tint(.white)
+                            } else {
+                                Image(systemName: "magnifyingglass")
+                                Text("查询")
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                    .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
+
+                    if isLoading {
+                        Button {
+                            isPaused = true
+                        } label: {
+                            Image(systemName: "pause.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.red)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(inputInfo.valid.isEmpty ? Color.gray : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
                 }
                 .padding(.horizontal)
-                .disabled(inputInfo.valid.isEmpty || isLoading || !HarConfig.shared.isConfigured)
 
                 if !errorMsg.isEmpty {
                     Text(errorMsg)
                         .foregroundColor(.red)
                         .padding()
-                }
-
-                if !queryStats.isEmpty {
-                    Text(queryStats)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
                 }
 
                 if results.isEmpty && !isLoading {
@@ -247,7 +255,7 @@ struct ContentView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .navigationTitle("快递查询")
+            .navigationBarTitle("快递查询", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -275,33 +283,54 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
-                    Section("查询设置") {
-                        Stepper(value: $concurrency, in: 1...20) {
-                            Text("并发数：\(concurrency)")
+                    HStack {
+                        Text("并发数")
+                        Spacer()
+                        Text("\(concurrency)")
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        Spacer()
+                        HStack(spacing: 8) {
+                            Button {
+                                if concurrency > 1 { concurrency -= 1 }
+                            } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.system(size: 22))
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            Button {
+                                if concurrency < 20 { concurrency += 1 }
+                            } label: {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 22))
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                     }
-                    Section("操作") {
+                    HStack {
                         Button {
                             showSettings = false
                             showPicker = true
                         } label: {
-                            HStack {
+                            VStack {
                                 Image(systemName: "doc.badge.gearshape")
                                     .foregroundColor(.blue)
-                                Text("导入HAR文件")
-                                Spacer()
+                                Text("导入文件")
+                                    .font(.caption)
                             }
+                            .frame(maxWidth: .infinity)
                         }
                         Button {
                             showSettings = false
                             exportXLSX()
                         } label: {
-                            HStack {
+                            VStack {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(.blue)
-                                Text("导出Excel")
-                                Spacer()
+                                Text("导出文件")
+                                    .font(.caption)
                             }
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -310,6 +339,7 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { showSettings = false }
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -356,8 +386,13 @@ struct ContentView: View {
                 .navigationTitle("物流详情")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("返回") { selectedResult = nil }
+                            .foregroundColor(.blue)
+                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("完成") { selectedResult = nil }
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -366,7 +401,10 @@ struct ContentView: View {
 
     private func exportXLSX() {
         let validResults = results.filter { !$0.traces.isEmpty }
-        guard !validResults.isEmpty else { return }
+        guard !validResults.isEmpty else {
+            errorMsg = "没有可导出的数据"
+            return
+        }
 
         var rows: [[String]] = []
         for r in validResults {
@@ -421,6 +459,7 @@ struct ContentView: View {
         results = []
         errorMsg = ""
         queryStats = ""
+        isPaused = false
 
         let info = TrackParsing.parseInputDetailed(mailNo)
         guard !info.valid.isEmpty else {
@@ -429,9 +468,7 @@ struct ContentView: View {
             return
         }
 
-        // 去重
         let unique = Array(Set(info.valid)).sorted()
-        let dupCount = info.valid.count - unique.count
         let start = Date()
 
         await withTaskGroup(of: QueryResult.self) { group in
@@ -445,7 +482,6 @@ struct ContentView: View {
                             let json = try await NetworkManager.shared.query(mailNo: no)
                             return parseTracesToResult(no, json: json)
                         } catch {
-                            // 重试一次
                             do {
                                 let json = try await NetworkManager.shared.query(mailNo: no)
                                 return parseTracesToResult(no, json: json)
@@ -457,13 +493,12 @@ struct ContentView: View {
                     active += 1
                     index += 1
                 }
+                if isPaused { break }
                 if let r = await group.next() {
                     results.append(r)
                     active -= 1
-                    let success = results.filter { $0.error == nil }.count
-                    let fail = results.count - success
                     let elapsed = Date().timeIntervalSince(start)
-                    queryStats = "已查询 \(results.count)/\(unique.count) 用时\(String(format: "%.1f", elapsed))s 成功\(success) 失败\(fail) 重复\(dupCount)"
+                    queryStats = "用时\(String(format: "%.1f", elapsed))s"
                 }
             }
         }
@@ -491,7 +526,6 @@ struct ContentView: View {
         }
         items.sort { $0.time > $1.time }
 
-        // 寄达地
         var destCity = ""
         for t in items {
             var s = t.desc
