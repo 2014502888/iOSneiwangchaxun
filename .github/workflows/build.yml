@@ -37,10 +37,11 @@ jobs:
 
       - name: Package IPA
         run: |
+          cd MailTracker
           mkdir -p dist Payload
-          cp -R plchaxun/build/plchaxun.app Payload/
+          cp -R build/plchaxun.app Payload/
           zip -r dist/plchaxun.ipa Payload/
-          cp -R plchaxun/build/plchaxun.app dist/
+          cp -R build/plchaxun.app dist/
 
       - name: Upload
         uses: actions/upload-artifact@v4
