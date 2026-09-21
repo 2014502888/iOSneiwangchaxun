@@ -1,10 +1,14 @@
 import SwiftUI
 import UIKit
 
-// 启用边缘右滑返回手势
+// 全局启用边缘右滑返回
 extension UINavigationController: UIGestureRecognizerDelegate {
     open override func viewDidLoad() {
         super.viewDidLoad()
-        interactivePopGestureRecognizer?.delegate = nil
+        interactivePopGestureRecogn?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return viewControllers.count > 1
     }
 }
