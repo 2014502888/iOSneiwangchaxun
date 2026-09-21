@@ -1,30 +1,16 @@
-﻿import SwiftUI
+import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct DocumentPicker: UIViewControllerRepresentable {
-    var onPicked: (URL) -> Void
 
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
-        picker.delegate = context.coordinator
-        picker.allowsMultipleSelection = false
-        return picker
+class ImportDelegate: NSObject, UIDocumentPickerDelegate {
+    static let shared = ImportDelegate()
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        HarImporter.importHar(from: url)
     }
-
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked)
-    }
-
-    class Coordinator: NSObject, UIDocumentPickerDelegate {
-        var onPicked: (URL) -> Void
-        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
-            onPicked(url)
-        }
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        controller.dismiss(animated: true)
     }
 }
 
@@ -119,7 +105,6 @@ struct ContentView: View {
     @State private var mailNo = ""
     @State private var results: [QueryResult] = []
     @State private var isLoading = false
-    @State private var showPicker = false
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
     @State private var queryStats = ""
@@ -275,11 +260,7 @@ struct ContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showPicker) {
-            DocumentPicker { url in
-                HarImporter.importHar(from: url)
-            }
-        }
+
         .sheet(isPresented: $showSettings) {
             NavigationView {
                 List {
@@ -309,8 +290,7 @@ struct ContentView: View {
                     }
                     HStack {
                         Button {
-                            showSettings = false
-                            showPicker = true
+                            presentImportPicker()
                         } label: {
                             VStack {
                                 Image(systemName: "doc.badge.gearshape")
@@ -397,6 +377,13 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    private func presentImportPicker() {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+        picker.delegate = ImportDelegate.shared
+        picker.allowsMultipleSelection = false
+        UIApplication.shared.windows.first?.rootViewController?.presentedViewController?.present(picker, animated: true)
     }
 
     private func exportXLSX() {
