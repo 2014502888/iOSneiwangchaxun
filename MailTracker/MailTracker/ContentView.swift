@@ -413,7 +413,11 @@ struct ContentView: View {
                             }
                         }
                         .padding(.vertical, 4)
+                        Divider().background(Color.gray.opacity(0.2)).padding(.top, 4)
                     }
+                    .listRowBackground(Color(.secondarySystemGroupedBackground))
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color(.secondarySystemGroupedBackground))
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
