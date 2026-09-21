@@ -236,6 +236,7 @@ final class InternalQueryEngine: ObservableObject {
 }
 
 struct InternalView: View {
+    @Environment(\.presentationMode) var presentationMode
     @StateObject private var engine = InternalQueryEngine()
     @State private var selectedTab: InternalResultTab = .success
     @State private var selectedResult: InternalMailResult?
@@ -279,6 +280,7 @@ struct InternalView: View {
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
         .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
@@ -505,5 +507,12 @@ struct InternalDetailSheet: View {
                 }
             }
         }
+    }
+}
+
+
+extension UIApplication {
+    var isKeyboardVisible: Bool {
+        windows.first(where: { $0.isKeyWindow })?.subviews.contains(where: { $0.description.contains("UIRemoteKeyboardWindow") }) ?? false
     }
 }
