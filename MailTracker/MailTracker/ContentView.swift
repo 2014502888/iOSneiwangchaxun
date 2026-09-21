@@ -265,7 +265,12 @@ struct ContentView: View {
                         }
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        exportXLSX()
+                    } label: {
+                        Text("导出数据").foregroundColor(.blue)
+                    }
                     Button {
                         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
                         picker.delegate = ImportDelegate.shared
@@ -403,6 +408,38 @@ struct ContentView: View {
                 }
             }
             .listStyle(PlainListStyle())
+        }
+    }
+
+    private func exportXLSX() {
+        let valid = engine.results.filter { !$0.traces.isEmpty }
+        guard !valid.isEmpty else { return }
+        var rows: [[String]] = []
+        for r in valid {
+            let last = r.traces[0]
+            var acceptTrace: TraceNode? = nil
+            for t in r.traces { if t.title.contains("收寄") { acceptTrace = t; break } }
+            if acceptTrace == nil && r.traces.count > 1 { acceptTrace = r.traces[r.traces.count - 2] }
+            rows.append([
+                r.mailNum, last.time, last.title, r.weight, r.fee,
+                last.province, last.city, last.orgName, last.orgCode,
+                r.destCity, r.destProvince,
+                acceptTrace?.province ?? "", acceptTrace?.city ?? "", acceptTrace?.orgName ?? ""
+            ])
+        }
+        let data = XLSXExporter.export(rows: rows)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(XLSXExporter.defaultFileName() + ".xlsx")
+        do {
+            try data.write(to: url)
+            DispatchQueue.main.async {
+                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                if let popover = activityVC.popoverPresentationController {
+                    popover.sourceView = UIApplication.shared.windows.first
+                    popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true)
+            }
         }
     }
 
