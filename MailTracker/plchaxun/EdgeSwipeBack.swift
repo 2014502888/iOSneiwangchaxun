@@ -5,7 +5,7 @@ import UIKit
 extension UINavigationController: UIGestureRecognizerDelegate {
     open override func viewDidLoad() {
         super.viewDidLoad()
-        interactivePopGestureRecogn?.delegate = self
+        interactivePopGestureRecognizer.delegate = self
     }
 
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
