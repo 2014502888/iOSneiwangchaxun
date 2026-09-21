@@ -279,6 +279,7 @@ struct ContentView: View {
             .sheet(item: $selectedResult) { r in DetailSheet(result: r) }
         }
         .navigationViewStyle(.stack)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var inputSection: some View {
