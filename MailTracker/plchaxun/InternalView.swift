@@ -251,6 +251,17 @@ struct InternalView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        if UIApplication.shared.isKeyboardVisible {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left").foregroundColor(.blue)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button { engine.inputText = ""; engine.results = []; engine.total = 0 } label: {
                         Image(systemName: "trash").foregroundColor(.blue)
                     }.disabled(engine.inputText.isEmpty)
@@ -499,6 +510,17 @@ struct InternalDetailSheet: View {
             .navigationTitle("物流详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        if UIApplication.shared.isKeyboardVisible {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left").foregroundColor(.blue)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("返回") { dismiss() }.foregroundColor(.blue)
                 }
