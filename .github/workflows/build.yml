@@ -1,0 +1,49 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: cd MailTracker && xcodegen generate
+
+      - name: Build
+        run: |
+          set -o pipefail
+          cd MailTracker
+          xcodebuild -project MailTracker.xcodeproj \
+                     -scheme MailTracker \
+                     -configuration Release \
+                     -sdk iphoneos \
+                     CONFIGURATION_BUILD_DIR="$(pwd)/build" \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGNING_ALLOWED=NO \
+                     build 2>&1 | tee build.log || {
+            grep -n "error:" build.log || echo "no error"
+            tail -50 build.log
+            exit 1
+          }
+
+      - name: Package IPA
+        run: |
+          mkdir -p dist Payload
+          cp -R MailTracker/build/Release-iphoneos/MailTracker.app Payload/
+          zip -r dist/MailTracker.ipa Payload/
+          cp -R MailTracker/build/Release-iphoneos/MailTracker.app dist/
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: MailTracker-iOS
+          path: dist/
