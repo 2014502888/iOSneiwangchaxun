@@ -242,15 +242,14 @@ struct InternalView: View {
 
     var body: some View {
         NavigationView {
-            ZStack {
-                Color.clear.onTapGesture {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
                 inputSection
                 if engine.isQuerying { progressBar }
                 statsAndTabs
                 resultContent
+            }
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
 
             .toolbar {
@@ -282,7 +281,6 @@ struct InternalView: View {
                 }
             }
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
-            }
         }
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)

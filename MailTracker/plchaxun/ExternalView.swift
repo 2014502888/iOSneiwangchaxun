@@ -15,17 +15,16 @@ struct ExternalView: View {
 
     var body: some View {
         NavigationView {
-            ZStack {
-                Color.clear.onTapGesture {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
                 inputSection
                 if engine.isQuerying { progressBar }
                 if !engine.results.isEmpty || engine.isQuerying {
                     statsAndTabs
                 }
                 resultContent
+            }
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
 
             .navigationTitle("快递查询")
@@ -78,7 +77,6 @@ struct ExternalView: View {
             .onChange(of: selectedTab) { _ in
                 selectionMode = false
                 selectedMailNums.removeAll()
-            }
             }
         }
         .navigationViewStyle(.stack)
