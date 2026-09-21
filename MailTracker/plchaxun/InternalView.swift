@@ -386,10 +386,6 @@ struct InternalView: View {
         if currentList.isEmpty {
             VStack(spacing: 12) {
                 Spacer()
-            }
-            .onTapGesture {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                Image(systemName: "cube").font(.system(size: 50)).foregroundColor(.secondary).onTapGesture { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
                 Text("输入单号后点击查询").foregroundColor(.secondary)
                 Spacer()
             }
