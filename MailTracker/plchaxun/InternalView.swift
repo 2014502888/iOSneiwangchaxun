@@ -237,6 +237,7 @@ final class InternalQueryEngine: ObservableObject {
 
 struct InternalView: View {
     @Environment(\.presentationMode) var presentationMode
+    @State private var keyboardVisible = false
     @StateObject private var engine = InternalQueryEngine()
     @State private var selectedTab: InternalResultTab = .success
     @State private var selectedResult: InternalMailResult?
@@ -252,7 +253,7 @@ struct InternalView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        if UIApplication.shared.isKeyboardVisible {
+                        if keyboardVisible {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         } else {
                             presentationMode.wrappedValue.dismiss()
@@ -291,6 +292,10 @@ struct InternalView: View {
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
+        .onAppear {
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in keyboardVisible = true }
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
+        }
         .navigationBarBackButtonHidden(true)
         .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)

@@ -5,6 +5,7 @@ import UIKit
 struct ExternalView: View {
 
     @Environment(\.presentationMode) var presentationMode
+    @State private var keyboardVisible = false
     @StateObject private var engine = ExternalQueryEngine()
 
     @State private var selectedTab: ExternalResultTab = .success
@@ -25,6 +26,10 @@ struct ExternalView: View {
                 resultContent
             }
             .navigationTitle("")
+            .onAppear {
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in keyboardVisible = true }
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
+            }
             .navigationBarBackButtonHidden(true)
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
@@ -32,7 +37,7 @@ struct ExternalView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        if UIApplication.shared.isKeyboardVisible {
+                        if keyboardVisible {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         } else {
                             presentationMode.wrappedValue.dismiss()
