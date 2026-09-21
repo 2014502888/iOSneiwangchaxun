@@ -247,7 +247,7 @@ struct InternalView: View {
             VStack(spacing: 0) {
                 inputSection
                 if engine.isQuerying { progressBar }
-                statsAndTabs
+                if engine.isQuerying || !engine.results.isEmpty { statsAndTabs }
                 resultContent
             }
             .toolbar {
