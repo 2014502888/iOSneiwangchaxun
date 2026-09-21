@@ -23,7 +23,8 @@ struct ExternalView: View {
                 }
                 resultContent
             }
-            .navigationTitle("快递查询")
+            .navigationTitle("")
+            .navigationBarBackButtonHidden(true)
             .navigationBarTitleDisplayMode(.inline)
             .textSelection(.disabled)
             .ignoresSafeArea(.keyboard)

@@ -279,6 +279,7 @@ struct InternalView: View {
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
         .ignoresSafeArea(.keyboard)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
