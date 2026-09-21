@@ -295,6 +295,7 @@ struct InternalView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard)
+        .ignoresSafeArea(edges: .top)
         .navigationViewStyle(.stack)
         .navigationBarTitleDisplayMode(.inline)
     }
