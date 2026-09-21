@@ -123,8 +123,7 @@ struct ContentView: View {
     @State private var showPicker = false
     @State private var errorMsg = ""
     @State private var selectedResult: QueryResult?
-    @State private var queryStats = "
-        isPaused = false
+    @State private var queryStats = ""
     @State private var showSettings = false
     @State private var concurrency = 2
     @State private var isPaused = false
@@ -436,7 +435,7 @@ struct ContentView: View {
         isLoading = true
         results = []
         errorMsg = ""
-        queryStats = "
+        queryStats = ""
         isPaused = false
 
         let info = TrackParsing.parseInputDetailed(mailNo)
