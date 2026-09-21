@@ -285,7 +285,7 @@ struct InternalView: View {
                 resultContent
             }
 
-            .padding(.top, 1)
+            .padding(.top, -(UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0) + 1)
             .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
         }
         .navigationTitle("")
