@@ -1,5 +1,10 @@
 import Foundation
 
+// 🆕 登录会话失效错误：HAR 过期（工号退出登录等），触发后停止查询并提示重新导入
+struct SessionExpiredError: Error {
+    let message: String
+}
+
 class NetworkManager: NSObject, URLSessionDelegate {
 
     static let shared = NetworkManager()
@@ -36,6 +41,11 @@ class NetworkManager: NSObject, URLSessionDelegate {
         }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw NSError(domain: "Network", code: -2, userInfo: [NSLocalizedDescriptionKey: "解析失败"])
+        }
+        // 🆕 会话失效检测：服务端返回登录/会话/过期相关提示时，抛会话失效错误
+        if let msg = json["msg"] as? String,
+           msg.contains("登录") || msg.contains("会话") || msg.contains("失效") || msg.contains("过期") || msg.contains("未登录") {
+            throw SessionExpiredError(message: msg)
         }
         return json
     }
@@ -82,7 +92,8 @@ class NetworkManager: NSObject, URLSessionDelegate {
               let first = dataArr.first,
               let inner = first["data"] as? [String: Any],
               let newToken = inner["token"] as? String, !newToken.isEmpty else {
-            throw NSError(domain: "Network", code: -2, userInfo: [NSLocalizedDescriptionKey: "session验证失败"])
+            // 🆕 拿不到 token = 会话失效（HAR 过期/工号已退出登录），抛会话失效错误
+            throw SessionExpiredError(message: "登录会话已失效")
         }
         tokenLock.lock()
         token = newToken

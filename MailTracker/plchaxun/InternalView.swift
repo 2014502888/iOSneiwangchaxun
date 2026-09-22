@@ -119,6 +119,8 @@ final class InternalQueryEngine: ObservableObject {
     @Published var concurrency = 2
     // 🆕 服务端次数限制标记：触发后停止剩余查询，不再浪费请求
     @Published var rateLimited = false
+    // 🆕 登录会话失效标记：HAR 过期（工号退出登录），触发后停止查询并弹窗提示
+    @Published var sessionExpired = false
     private var currentTask: Task<Void, Never>?
     private let ticker = InternalTicker()
 
@@ -133,12 +135,14 @@ final class InternalQueryEngine: ObservableObject {
         let startDate = Date()
         total = nums.count; completed = 0; results = []; isQuerying = true
         rateLimited = false
+        sessionExpired = false
         currentTask = Task { [weak self] in await self?.run(nums: nums, start: startDate) }
         ticker.start { [weak self] in self?.elapsedSeconds = Date().timeIntervalSince(startDate) }
     }
     func cancel() {
         currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false; total = 0; elapsedSeconds = 0
         rateLimited = false
+        sessionExpired = false
     }
 
     @MainActor
@@ -162,6 +166,11 @@ final class InternalQueryEngine: ObservableObject {
                         await semaphore.signal()
                         return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "已停止（服务端次数限制）"))
                     }
+                    // 🆕 登录会话已失效：剩余单号不再发请求
+                    if self.sessionExpired {
+                        await semaphore.signal()
+                        return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "已停止（会话失效）"))
+                    }
                     do {
                         let json = try await NetworkManager.shared.query(mailNo: num)
                         await semaphore.signal()
@@ -170,6 +179,11 @@ final class InternalQueryEngine: ObservableObject {
                             self.rateLimited = true
                         }
                         return (index, self.parseResult(num, json: json))
+                    } catch let e as SessionExpiredError {
+                        // 🆕 会话失效：标记并停止剩余查询，弹窗提示重新导入 HAR
+                        await semaphore.signal()
+                        self.sessionExpired = true
+                        return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "会话失效：\(e.message)"))
                     } catch {
                         do {
                             let json = try await NetworkManager.shared.query(mailNo: num)
@@ -178,6 +192,10 @@ final class InternalQueryEngine: ObservableObject {
                                 self.rateLimited = true
                             }
                             return (index, self.parseResult(num, json: json))
+                        } catch let e2 as SessionExpiredError {
+                            await semaphore.signal()
+                            self.sessionExpired = true
+                            return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "会话失效：\(e2.message)"))
                         } catch {
                             await semaphore.signal()
                             return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "查询失败"))
@@ -266,6 +284,8 @@ struct InternalView: View {
     @StateObject private var engine = InternalQueryEngine()
     @State private var selectedTab: InternalResultTab = .success
     @State private var selectedResult: InternalMailResult?
+    // 🆕 会话失效弹窗
+    @State private var showSessionExpiredAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -321,6 +341,15 @@ struct InternalView: View {
             }
         }
         .sheet(item: $selectedResult) { r in InternalDetailSheet(result: r) }
+        // 🆕 会话失效：弹窗提示重新导入 HAR
+        .onChange(of: engine.sessionExpired) { expired in
+            if expired { showSessionExpiredAlert = true }
+        }
+        .alert("登录会话已失效", isPresented: $showSessionExpiredAlert) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text("之前导入的 HAR 已失效（可能已退出工号登录）。请重新登录后抓包，重新导入新的 HAR 文件。")
+        }
     }
 
     private var inputSection: some View {
