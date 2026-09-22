@@ -188,11 +188,16 @@ final class InternalQueryEngine: ObservableObject {
         if let data = json["data"] as? [String: Any], let l = data["data"] as? [[String: Any]] { list = l }
         else if let l = json["data"] as? [[String: Any]] { list = l }
         guard let l = list, !l.isEmpty else {
-            // 🆕 诊断：无物流信息时把服务端原始返回带进错误信息，便于定位是空数据/报错/结构变化
-            let raw = (try? JSONSerialization.data(withJSONObject: json, options: []))
-                .flatMap { String(data: $0, encoding: .utf8) } ?? ""
-            let preview = String(raw.prefix(200))
-            return InternalMailResult(mailNum: mailNo, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "无物流信息  [服务端返回] \(preview)")
+            // 🆕 显示服务端返回的 msg（如"已达到最大次数限制!"）；msg 为空时退回显示原始 JSON 诊断
+            let serverMsg = (json["msg"] as? String) ?? ""
+            var detail = serverMsg
+            if detail.isEmpty {
+                let raw = (try? JSONSerialization.data(withJSONObject: json, options: []))
+                    .flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                detail = String(raw.prefix(200))
+            }
+            let label = detail.isEmpty ? "" : "  [服务端] \(detail)"
+            return InternalMailResult(mailNum: mailNo, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "无物流信息\(label)")
         }
         var items: [InternalTraceNode] = []; var weight = ""; var fee = ""
         for item in l { flatten(item, into: &items, weight: &weight, fee: &fee) }
