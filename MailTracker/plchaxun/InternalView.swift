@@ -130,6 +130,9 @@ final class InternalQueryEngine: ObservableObject {
 
     func start() {
         guard !isQuerying else { return }
+        // 🆕 每次查询前清除 token 缓存：导入新 HAR 后天然立即生效（不再依赖 resetToken 调用时机），
+        // 同时避免复用过期 token；批次内仍由 tokenTask 合并为 1 个 xmGetToken 请求，不额外耗请求
+        NetworkManager.shared.resetToken()
         let nums = InternalTrackParsing.parseInput(inputText)
         guard !nums.isEmpty else { return }
         let startDate = Date()
