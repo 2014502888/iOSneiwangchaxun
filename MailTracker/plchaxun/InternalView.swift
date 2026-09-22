@@ -347,8 +347,6 @@ struct InternalView: View {
         }
         .alert("登录会话已失效", isPresented: $showSessionExpiredAlert) {
             Button("知道了", role: .cancel) {}
-        } message: {
-            Text("之前导入的 HAR 已失效（可能已退出工号登录）。请重新登录后抓包，重新导入新的 HAR 文件。")
         }
     }
 

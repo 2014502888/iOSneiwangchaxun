@@ -50,8 +50,16 @@ class NetworkManager: NSObject, URLSessionDelegate {
         return json
     }
 
-    private func fetchToken() async throws -> String {
+    /// 🆕 清除 token 缓存：导入新 HAR 后调用，使新 sessionId 立即生效（无需重启 App）
+    func resetToken() {
         tokenLock.lock()
+        token = nil
+        tokenTask?.cancel()
+        tokenTask = nil
+        tokenLock.unlock()
+    }
+
+    private func fetchToken() async throws -> String {        tokenLock.lock()
         if let t = token, !t.isEmpty {
             tokenLock.unlock()
             return t

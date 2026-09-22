@@ -57,7 +57,9 @@ enum InternalHarImporter {
             }
 
             InternalHarConfig.shared.save(sessionId: sessionId, userAgent: userAgent)
-            showToast("HAR导入成功，重启App生效")
+            // 🆕 清除旧 token 缓存，新 sessionId 立即生效，无需重启 App
+            NetworkManager.shared.resetToken()
+            showToast("HAR导入成功，立即生效")
         } catch {
             showToast("HAR导入失败: \(error.localizedDescription)")
         }
