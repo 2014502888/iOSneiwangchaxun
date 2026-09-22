@@ -117,6 +117,8 @@ final class InternalQueryEngine: ObservableObject {
     @Published var elapsedSeconds: Double = 0
     @Published var results: [InternalMailResult] = []
     @Published var concurrency = 2
+    // 🆕 服务端次数限制标记：触发后停止剩余查询，不再浪费请求
+    @Published var rateLimited = false
     private var currentTask: Task<Void, Never>?
     private let ticker = InternalTicker()
 
@@ -130,11 +132,13 @@ final class InternalQueryEngine: ObservableObject {
         guard !nums.isEmpty else { return }
         let startDate = Date()
         total = nums.count; completed = 0; results = []; isQuerying = true
+        rateLimited = false
         currentTask = Task { [weak self] in await self?.run(nums: nums, start: startDate) }
         ticker.start { [weak self] in self?.elapsedSeconds = Date().timeIntervalSince(startDate) }
     }
     func cancel() {
         currentTask?.cancel(); currentTask = nil; ticker.stop(); isQuerying = false; total = 0; elapsedSeconds = 0
+        rateLimited = false
     }
 
     @MainActor
@@ -153,14 +157,26 @@ final class InternalQueryEngine: ObservableObject {
                         await semaphore.signal()
                         return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "已取消"))
                     }
+                    // 🆕 已触发服务端次数限制：剩余单号不再发请求，直接标记停止
+                    if self.rateLimited {
+                        await semaphore.signal()
+                        return (index, InternalMailResult(mailNum: num, traces: [], weight: "", fee: "", destProvince: "", destCity: "", error: "已停止（服务端次数限制）"))
+                    }
                     do {
                         let json = try await NetworkManager.shared.query(mailNo: num)
                         await semaphore.signal()
+                        // 🆕 检测服务端限次：达到最大次数时标记，剩余查询立即停止
+                        if let msg = json["msg"] as? String, msg.contains("次数") || msg.contains("限制") {
+                            self.rateLimited = true
+                        }
                         return (index, self.parseResult(num, json: json))
                     } catch {
                         do {
                             let json = try await NetworkManager.shared.query(mailNo: num)
                             await semaphore.signal()
+                            if let msg = json["msg"] as? String, msg.contains("次数") || msg.contains("限制") {
+                                self.rateLimited = true
+                            }
                             return (index, self.parseResult(num, json: json))
                         } catch {
                             await semaphore.signal()
@@ -321,7 +337,9 @@ struct InternalView: View {
 
             // 🆕 提示/状态文字：移到输入框下方
             HStack(spacing: 8) {
-                if engine.total > 0 {
+                if engine.rateLimited {
+                    Text("已达服务端查询次数限制，剩余已停止").foregroundColor(.red).fontWeight(.medium)
+                } else if engine.total > 0 {
                     if engine.isQuerying { Text("\(engine.total) 个正在查询") }
                     else { Text("已查询 \(engine.total) 个") }
                     Text("用时 \(formattedElapsed)")
