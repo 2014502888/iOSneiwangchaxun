@@ -164,13 +164,13 @@ final class ExternalQueryEngine: ObservableObject {
                     var outcome: FetchResult
                     outcome = await ExternalTrackAPI.fetch(num)
                     var retryCount = 0
-                    var shouldRetry: Bool {
+                    func shouldRetry() -> Bool {
                         switch outcome {
                         case .success: return false
                         case .notFound, .error: return true
                         }
                     }
-                    while retryCount < 2 && shouldRetry {
+                    while retryCount < 2 && shouldRetry() {
                         retryCount += 1
                         // 稍微等一下再重试
                         try? await Task.sleep(nanoseconds: 500_000_000)
