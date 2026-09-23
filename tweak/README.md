@@ -26,3 +26,5 @@ make package
 ## 调注入目标
 编辑 `FullScreenBackTweak.plist`，把 `"Bundles": ["*"]` 改成指定 App 的
 Bundle ID（如 `["com.tencent.xin"]`），只对该 App 生效。
+
+> 此工程由 GitHub Actions 在 macOS 上自动编译，产物 dylib 在该 commit 的 Actions artifact 中直接下载。
