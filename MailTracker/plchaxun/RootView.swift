@@ -49,6 +49,7 @@ struct RootView: View {
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
             }
+            .background(pageBg.ignoresSafeArea())
         }
         .navigationViewStyle(.stack)
         .onAppear { FullScreenBack.install() }

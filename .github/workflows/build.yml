@@ -41,7 +41,6 @@ jobs:
           mkdir -p dist Payload
           cp -R build/plchaxun.app Payload/
           zip -r dist/plchaxun.ipa Payload/
-          cp -R build/plchaxun.app dist/
 
       - name: Upload
         uses: actions/upload-artifact@v4
