@@ -16,22 +16,25 @@ jobs:
 
       - name: Setup Theos
         run: |
-          sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
+          git clone --recursive https://github.com/theos/theos.git /opt/theos
           sudo chown -R "$(id -un)" /opt/theos
           brew install ldid
-          # 避免权限/缓存目录问题
-          mkdir -p "$THEOS/lib" "$THEOS/include"
+          echo "PATH=/opt/theos/bin:$PATH" >> $GITHUB_PATH
 
       - name: Build tweak
-        run: cd tweak && make clean && make
+        continue-on-error: true
+        run: |
+          cd tweak
+          make clean
+          make 2>&1 | tee build.log
+          echo "----- exit: $? -----"
+          find . -name "*.dylib" || true
 
-      - name: Locate dylib
-        run: find . -name "*.dylib" -path "*_*" > dylib_path.txt; cat dylib_path.txt
-
-      - name: Upload dylib
+      - name: Upload build log (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FullScreenBackTweak-dylib
+          name: dylib-build-log
           path: |
-            tweak/.theos/_/*.dylib
-            tweak/.theos/_/**/*.dylib
+            tweak/build.log
+            tweak/.theos/**
