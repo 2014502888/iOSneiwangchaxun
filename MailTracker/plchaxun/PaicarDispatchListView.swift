@@ -245,13 +245,9 @@ struct PaicarDispatchListView: View {
         Task {
             do {
                 let p = try await PaicarProfileHolder.load()
-                // 串行 + Task 级硬超时：请求挂起时 15 秒内必定返回，不再无限转圈
-                let rawApplies = try await PaicarApi.withTimeout(15) {
-                    try await PaicarApi.applyOrderList(organId: p.organId, rolesId: p.rolesId)
-                }
-                let rawDispatch = try await PaicarApi.withTimeout(15) {
-                    try await PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: 1, perpage: 20)
-                }
+                // 串行请求；超时已下沉到 PaicarApi.perform（回调版+强制取消，15 秒内必出结果，不再无限转圈）
+                let rawApplies = try await PaicarApi.applyOrderList(organId: p.organId, rolesId: p.rolesId)
+                let rawDispatch = try await PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: 1, perpage: 20)
                 dispatchPage = 1
                 applies = rawApplies.map { PaicarApplyOrder.fromJson($0) }
                     .filter { $0.statusCode == "000" || $0.statusCode == "001" }
@@ -276,9 +272,7 @@ struct PaicarDispatchListView: View {
         Task {
             do {
                 let p = try await PaicarProfileHolder.load()
-                let raw = try await PaicarApi.withTimeout(15) {
-                    try await PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: dispatchPage + 1, perpage: 20)
-                }
+                let raw = try await PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: dispatchPage + 1, perpage: 20)
                 dispatchPage += 1
                 let more = raw.map { PaicarDispatchOrder.fromJson($0) }
                     .filter { $0.statusCode == "003" || $0.statusCode == "004" }

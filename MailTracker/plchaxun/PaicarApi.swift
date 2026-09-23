@@ -63,6 +63,34 @@ enum PaicarApi {
         return r
     }
 
+    /// 网络请求统一入口（回调版 URLSession + 任务级硬超时）。
+    /// 为什么不用 async 版 data(for:)：iOS 18 上 URLSession 请求可能永久挂起且
+    /// timeoutInterval 不生效，async 版挂起后调用 cancel 也无法中断，导致无限转圈；
+    /// 回调版 dataTask 在 task.cancel() 时必定触发 completion(URLError.cancelled)，
+    /// 超时后强制 cancel，任何请求 15 秒内必出结果（数据或错误），不再无限转圈。
+    private static func perform(_ req: URLRequest, timeout: TimeInterval = 15, service: String) async throws -> Data {
+        let session = makeSession(timeout: timeout)
+        return try await withCheckedThrowingContinuation { cont in
+            let task = session.dataTask(with: req) { data, _, err in
+                session.invalidateAndCancel()
+                if let urlErr = err as? URLError, urlErr.code == .cancelled {
+                    // 由下方超时强制取消触发：请求真实挂起，错误带上接口名便于定位
+                    cont.resume(throwing: PaicarError.api("请求超时(\(service))，请检查网络后重试"))
+                } else if let err = err {
+                    cont.resume(throwing: err)
+                } else if let data = data {
+                    cont.resume(returning: data)
+                } else {
+                    cont.resume(throwing: PaicarError.api("空响应(\(service))"))
+                }
+            }
+            task.resume()
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                task.cancel()   // 请求已完成时 cancel 无害；请求挂起时强制中断
+            }
+        }
+    }
+
     static func get(_ service: String, params: [(String, String)]) async throws -> PaicarResult {
         let signed = signed(service: service, params: params)
         var comps = URLComponents(string: base)!
@@ -74,9 +102,7 @@ enum PaicarApi {
         guard let url = comps.url else { throw PaicarError.api("URL 错误") }
         var req = URLRequest(url: url)
         req.timeoutInterval = 15
-        let session = makeSession()
-        defer { session.invalidateAndCancel() }
-        let (data, _) = try await session.data(for: req)
+        let data = try await perform(req, service: service)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
     }
@@ -93,26 +119,9 @@ enum PaicarApi {
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 15
         req.httpBody = bodyString.data(using: .utf8)
-        let session = makeSession()
-        defer { session.invalidateAndCancel() }
-        let (data, _) = try await session.data(for: req)
+        let data = try await perform(req, service: service)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
-    }
-
-    /// Task 级硬超时：即使 URLSession 挂起且不触发超时，seconds 后也强制抛错（iOS 18 上
-    /// timeoutIntervalForRequest 对挂起请求存在失效情况，表现为无限转圈）
-    static func withTimeout<T>(_ seconds: TimeInterval, _ op: @escaping () async throws -> T) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask { try await op() }
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-                throw PaicarError.api("请求超时，请检查网络后重试")
-            }
-            guard let first = try await group.next() else { throw PaicarError.api("请求异常") }
-            group.cancelAll()
-            return first
-        }
     }
 
     /// multipart 上传图片（对应 PaicarApi.uploadImage，字段 file）
@@ -139,11 +148,8 @@ enum PaicarApi {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
-        let session = makeSession(timeout: 60)
-        defer { session.invalidateAndCancel() }
-        let (data, _) = try await session.data(for: req)
-        guard let raw = String(data: data, encoding: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        let data = try await perform(req, timeout: 60, service: "App.Upload_uploadImage.go")
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw PaicarError.api("上传失败")
         }
         return obj
