@@ -100,6 +100,21 @@ enum PaicarApi {
         return try parseBody(body, service: service)
     }
 
+    /// Task 级硬超时：即使 URLSession 挂起且不触发超时，seconds 后也强制抛错（iOS 18 上
+    /// timeoutIntervalForRequest 对挂起请求存在失效情况，表现为无限转圈）
+    static func withTimeout<T>(_ seconds: TimeInterval, _ op: @escaping () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await op() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw PaicarError.api("请求超时，请检查网络后重试")
+            }
+            guard let first = try await group.next() else { throw PaicarError.api("请求异常") }
+            group.cancelAll()
+            return first
+        }
+    }
+
     /// multipart 上传图片（对应 PaicarApi.uploadImage，字段 file）
     static func uploadImage(fileData: Data, fileName: String, extra: [(String, String)]) async throws -> [String: Any] {
         let signed = signed(service: "App.Upload_uploadImage.go", params: extra)
