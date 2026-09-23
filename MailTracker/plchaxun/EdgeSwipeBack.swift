@@ -105,8 +105,6 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
         let t = pan.translation(in: g.view)
         // 只响应向右（返回方向）的横向拖动；纵向滚动不抢
         guard t.x > 2, abs(t.x) > abs(t.y) else { return false }
-        // 手势真正开始返回时轻震一下（light档，安全的delegate回调，不挂系统手势target）
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         return true
     }
 }
