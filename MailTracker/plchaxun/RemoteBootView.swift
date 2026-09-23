@@ -74,8 +74,8 @@ struct RemoteBootView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
-            EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() }
             let d = UserDefaults.standard
             remember = d.bool(forKey: "rb_remember")
             if remember {

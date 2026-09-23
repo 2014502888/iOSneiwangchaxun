@@ -131,6 +131,7 @@ struct PaicarApplyEditView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
             if customerList.isEmpty { load() }
         }
@@ -504,6 +505,7 @@ struct PaicarArrangeView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
             if order == nil { load() }
         }

@@ -40,7 +40,6 @@ struct PaicarModuleView: View {
             }
         )
         .onAppear {
-            EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() }
             // 自动登录：已有有效 token 直接进主页；有保存账号密码则自动调登录
             if PaicarSession.loggedIn {
                 loggedIn = true
@@ -78,6 +77,7 @@ struct PaicarModuleView: View {
             navMode = (note.userInfo?["mode"] as? String) ?? ""
             navTarget = .finish
         }
+        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
     }
 
     private func autoLogin() {

@@ -138,11 +138,11 @@ struct WebHelperWebView: UIViewRepresentable {
             parent.progress = 1.0
         }
 
-        // 新窗口链接：在外部浏览器打开（与安卓外部 intent 行为一致）
+        // 新窗口链接：在当前 WebView 内打开，不跳系统浏览器
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                      for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             if let url = navigationAction.request.url {
-                UIApplication.shared.open(url)
+                webView.load(URLRequest(url: url))
             }
             return nil
         }
@@ -286,7 +286,7 @@ struct WebHelperView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
-        .onAppear { EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() } }
+        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }
