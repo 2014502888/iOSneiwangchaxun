@@ -87,6 +87,7 @@ enum PaicarApi {
             task.resume()
             DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
                 task.cancel()   // 请求已完成时 cancel 无害；请求挂起时强制中断
+                session.invalidateAndCancel()   // 双保险：强制终止整个会话，保证 completion 必定触发
             }
         }
     }
