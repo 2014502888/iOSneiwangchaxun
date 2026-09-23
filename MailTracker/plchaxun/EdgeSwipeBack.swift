@@ -61,9 +61,18 @@ final class FullScreenPanGesture: UIPanGestureRecognizer {}
 
 final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
     static let shared = FullScreenBackDelegate()
+    private func nav(of view: UIView?) -> UINavigationController? {
+        var r: UIResponder? = view?.next
+        while let cur = r {
+            if let n = cur as? UINavigationController { return n }
+            if let vc = cur as? UIViewController, let n = vc.navigationController { return n }
+            r = cur.next
+        }
+        return nil
+    }
     func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
         guard let pan = g as? UIPanGestureRecognizer,
-              let nav = FullScreenBack.nav else { return false }
+              let nav = nav(of: g.view) else { return false }
         // 只有导航栈多于一页才允许返回
         guard nav.viewControllers.count > 1 else { return false }
         let t = pan.translation(in: g.view)
@@ -74,24 +83,31 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
 }
 
 enum FullScreenBack {
-    static weak var nav: UINavigationController?
+    private static func install(on nav: UINavigationController) {
+        if nav.view.gestureRecognizers?.contains(where: { $0 is FullScreenPanGesture }) == true { return }
+        // KVC 拿到系统边缘返回手势的 target（_UINavigationInteractiveTransition），
+        // 全屏手势直接驱动它的私有 handleNavigationTransition:，复用系统原生 pop 动画
+        guard let sys = nav.interactivePopGestureRecognizer,
+              let targets = sys.value(forKey: "_targets") as? [NSObject],
+              let target = targets.first?.value(forKey: "_target") else { return }
+        let sel = NSSelectorFromString("handleNavigationTransition:")
+        let g = FullScreenPanGesture(target: target, action: sel)
+        g.delegate = FullScreenBackDelegate.shared
+        nav.view.addGestureRecognizer(g)
+        sys.isEnabled = false   // 全屏手势接管，避免与系统边缘手势重复
+    }
+    private static func walk(_ vc: UIViewController?) {
+        guard let vc = vc else { return }
+        if let n = vc as? UINavigationController { install(on: n) }
+        for c in vc.children { walk(c) }
+    }
+    /// 遍历所有窗口的所有导航控制器，全部装上全屏手势（与 dylib 插件行为一致）
     static func install() {
         DispatchQueue.main.async {
-            guard let window = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene }).first?.windows.first,
-                  let nav = EdgeSwipeBack.findNav(window.rootViewController) else { return }
-            FullScreenBack.nav = nav
-            if nav.view.gestureRecognizers?.contains(where: { $0 is FullScreenPanGesture }) == true { return }
-            // KVC 拿到系统边缘返回手势的 target（_UINavigationInteractiveTransition），
-            // 全屏手势直接驱动它的私有 handleNavigationTransition:，复用系统原生 pop 动画
-            guard let sys = nav.interactivePopGestureRecognizer,
-                  let targets = sys.value(forKey: "_targets") as? [NSObject],
-                  let target = targets.first?.value(forKey: "_target") else { return }
-            let sel = NSSelectorFromString("handleNavigationTransition:")
-            let g = FullScreenPanGesture(target: target, action: sel)
-            g.delegate = FullScreenBackDelegate.shared
-            nav.view.addGestureRecognizer(g)
-            sys.isEnabled = false   // 全屏手势接管，避免与系统边缘手势重复
+            for scene in UIApplication.shared.connectedScenes {
+                guard let ws = scene as? UIWindowScene else { continue }
+                for w in ws.windows { walk(w.rootViewController) }
+            }
         }
     }
 }
