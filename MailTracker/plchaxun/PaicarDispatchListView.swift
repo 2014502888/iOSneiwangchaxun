@@ -245,9 +245,9 @@ struct PaicarDispatchListView: View {
         Task {
             do {
                 let p = try await PaicarProfileHolder.load()
-                async let a = PaicarApi.applyOrderList(organId: p.organId, rolesId: p.rolesId)
-                async let d = PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: 1, perpage: 20)
-                let (rawApplies, rawDispatch) = try await (a, d)
+                // 串行请求：iOS 并发 URLSession 存在死锁（表现为永久转圈不超时），串行稳定优先
+                let rawApplies = try await PaicarApi.applyOrderList(organId: p.organId, rolesId: p.rolesId)
+                let rawDispatch = try await PaicarApi.dispatchOrderList(organId: p.organId, rolesId: p.rolesId, page: 1, perpage: 20)
                 dispatchPage = 1
                 applies = rawApplies.map { PaicarApplyOrder.fromJson($0) }
                     .filter { $0.statusCode == "000" || $0.statusCode == "001" }

@@ -9,15 +9,15 @@ enum PaicarApi {
     private static let salt = "*#&FD)#f34"
     private static let authExpiredCode = 410
 
-    // 无缓存会话，请求超时 20s（此前用 URLSession.shared.data(from: url)，timeoutInterval 不生效，
-    // 请求挂起时最长 60s 才报错，表现为一直转圈）
-    private static let session: URLSession = {
+    // 每个请求使用独立的 ephemeral 会话（iOS 上共享 URLSession 与 Swift 并发并发请求存在已知死锁，
+    // 表现为请求永久挂起且不触发超时；独立会话=独立连接池，彻底绕开该问题）
+    private static func makeSession(timeout: TimeInterval = 15) -> URLSession {
         let cfg = URLSessionConfiguration.ephemeral
-        cfg.timeoutIntervalForRequest = 20
-        cfg.timeoutIntervalForResource = 30
+        cfg.timeoutIntervalForRequest = timeout
+        cfg.timeoutIntervalForResource = timeout + 10
         cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSession(configuration: cfg)
-    }()
+    }
 
     // 登录态
     static var token = ""
@@ -73,7 +73,9 @@ enum PaicarApi {
         comps.queryItems = items
         guard let url = comps.url else { throw PaicarError.api("URL 错误") }
         var req = URLRequest(url: url)
-        req.timeoutInterval = 20
+        req.timeoutInterval = 15
+        let session = makeSession()
+        defer { session.invalidateAndCancel() }
         let (data, _) = try await session.data(for: req)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
@@ -89,8 +91,10 @@ enum PaicarApi {
         var req = URLRequest(url: URL(string: base)!)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        req.timeoutInterval = 20
+        req.timeoutInterval = 15
         req.httpBody = bodyString.data(using: .utf8)
+        let session = makeSession()
+        defer { session.invalidateAndCancel() }
         let (data, _) = try await session.data(for: req)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
@@ -120,6 +124,8 @@ enum PaicarApi {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
+        let session = makeSession(timeout: 60)
+        defer { session.invalidateAndCancel() }
         let (data, _) = try await session.data(for: req)
         guard let raw = String(data: data, encoding: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
