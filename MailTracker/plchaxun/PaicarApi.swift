@@ -9,6 +9,16 @@ enum PaicarApi {
     private static let salt = "*#&FD)#f34"
     private static let authExpiredCode = 410
 
+    // 无缓存会话，请求超时 20s（此前用 URLSession.shared.data(from: url)，timeoutInterval 不生效，
+    // 请求挂起时最长 60s 才报错，表现为一直转圈）
+    private static let session: URLSession = {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.timeoutIntervalForRequest = 20
+        cfg.timeoutIntervalForResource = 30
+        cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: cfg)
+    }()
+
     // 登录态
     static var token = ""
     static var userId = ""
@@ -64,7 +74,7 @@ enum PaicarApi {
         guard let url = comps.url else { throw PaicarError.api("URL 错误") }
         var req = URLRequest(url: url)
         req.timeoutInterval = 20
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(for: req)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
     }
@@ -79,7 +89,7 @@ enum PaicarApi {
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 20
         req.httpBody = bodyString.data(using: .utf8)
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await session.data(for: req)
         guard let body = String(data: data, encoding: .utf8) else { throw PaicarError.api("空响应") }
         return try parseBody(body, service: service)
     }
@@ -108,7 +118,7 @@ enum PaicarApi {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, _) = try await session.data(for: req)
         guard let raw = String(data: data, encoding: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw PaicarError.api("上传失败")

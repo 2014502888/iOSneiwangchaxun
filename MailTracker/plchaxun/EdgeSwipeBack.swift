@@ -7,7 +7,7 @@ import UIKit
 // 支持：屏幕左边缘右滑 / 屏幕右边缘左滑（横向为主、纵向位移小于 80pt 才触发）
 extension View {
     func edgeSwipeBack(_ onSwipe: @escaping () -> Void) -> some View {
-        self.simultaneousGesture(
+        self.highPriorityGesture(
             DragGesture(minimumDistance: 25)
                 .onEnded { value in
                     let w = UIScreen.main.bounds.width

@@ -40,11 +40,12 @@ struct PaicarModuleView: View {
             }
         )
         .onAppear {
-            // 自动登录：已有有效 token 直接进主页；有保存账号密码则自动调登录
-            if PaicarSession.loggedIn {
-                loggedIn = true
-            } else if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
+            // 每次进入派车都用保存的账号密码重新登录（不信任旧 token；
+            // 旧会话被其他端顶掉后，若直接用旧 token 进主页会出现列表转圈/获取资料失败）
+            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
                 autoLogin()
+            } else {
+                loggedIn = false
             }
             PaicarApi.onAuthExpired = {
                 DispatchQueue.main.async {

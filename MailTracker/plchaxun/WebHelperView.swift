@@ -81,11 +81,14 @@ struct WebHelperWebView: UIViewRepresentable {
             webView.customUserAgent = WebHelperConfig.desktopUA
         }
         context.coordinator.webView = webView
-        webView.load(URLRequest(url: URL(string: site.url)!))
+        // 仅当前选中的站点立即加载；其余等到被点击切换时再加载（见 updateUIView ensureLoaded）
+        if isActive { context.coordinator.ensureLoaded(webView) }
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        // 切换到本站点时首次加载
+        if isActive { context.coordinator.ensureLoaded(webView) }
         // 深浅色：背景跟随
         webView.isOpaque = false
         webView.backgroundColor = isDark ? UIColor.black : UIColor.white
@@ -100,11 +103,19 @@ struct WebHelperWebView: UIViewRepresentable {
         var parent: WebHelperWebView
         weak var webView: WKWebView?
         var lastBackTick = 0
+        private var didLoad = false
         private var didAutoFill = false
         private var pendingDownloadFilename: String?
 
         init(_ parent: WebHelperWebView) {
             self.parent = parent
+        }
+
+        /// 每个站点只真正加载一次；非选中态不加载，点击切换时才加载（对应 makeUIView/updateUIView 调用）
+        func ensureLoaded(_ webView: WKWebView) {
+            guard !didLoad else { return }
+            didLoad = true
+            webView.load(URLRequest(url: URL(string: parent.site.url)!))
         }
 
         // MARK: 导航
