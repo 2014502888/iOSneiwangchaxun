@@ -60,7 +60,7 @@ static void FBSInstallOnNav(UINavigationController *nav) {
         }
         UIGestureRecognizer *sys = nav.interactivePopGestureRecognizer;
         NSArray *targets = [sys valueForKey:@"_targets"];
-        id target = [targets.firstObject valueForKey:@"_target"];
+        id target = targets.firstObject;   // wrapper 本身，直接响应 handleNavigationTransition:
         if (!target) return;
         FBSPanGesture *gesture = [[FBSPanGesture alloc] initWithTarget:target
                                                                action:NSSelectorFromString(@"handleNavigationTransition:")];
