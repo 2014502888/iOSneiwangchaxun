@@ -52,7 +52,7 @@ struct RootView: View {
             .background(pageBg.ignoresSafeArea())
         }
         .navigationViewStyle(.stack)
-        .onAppear { FullScreenBack.install() }
+        .onAppear { /* FullScreenBack.install() 暂时禁用，回退系统左边缘返回避免闪退 */ }
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToRoot)) { _ in
             showPaicar = false
         }
