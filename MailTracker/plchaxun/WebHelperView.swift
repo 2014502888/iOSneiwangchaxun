@@ -107,6 +107,8 @@ struct WebHelperWebView: UIViewRepresentable {
         var lastBackTick = 0
         /// 网页「上一页」快照：交互式后退时左边露出的预览内容
         var previousSnapshot: UIImage?
+        /// 最近一次导航类型（WKNavigation 无 navigationType，从 navigationAction 记录）
+        private var lastNavigationType: WKNavigationType = .other
         private var didLoad = false
         private var didAutoFill = false
         private var pendingDownloadFilename: String?
@@ -126,7 +128,7 @@ struct WebHelperWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             parent.progress = 0.1
             // 前进离开当前页时缓存当前页快照（后退预览用）；后退导航不覆盖
-            if navigation.navigationType != .backForward, webView.canGoBack {
+            if lastNavigationType != .backForward, webView.canGoBack {
                 webView.takeSnapshot(with: nil) { [weak self] img, _ in
                     if let img = img { self?.previousSnapshot = img }
                 }
@@ -148,7 +150,7 @@ struct WebHelperWebView: UIViewRepresentable {
             // 自动填充账号密码（对应安卓 autofillCredentials）
             autoFillIfNeeded(webView)
             // 后退完成后若还有更早历史，缓存当前页供下次后退预览
-            if navigation.navigationType == .backForward, webView.canGoBack {
+            if lastNavigationType == .backForward, webView.canGoBack {
                 webView.takeSnapshot(with: nil) { [weak self] img, _ in
                     if let img = img { self?.previousSnapshot = img }
                 }
@@ -177,6 +179,8 @@ struct WebHelperWebView: UIViewRepresentable {
         // MARK: 下载（对应安卓 setDownloadListener + 扩展名检测）
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            // 记录导航类型：用于区分前进/后退（判断后退预览快照是否需要更新）
+            lastNavigationType = navigationAction.navigationType
             if navigationAction.shouldPerformDownload {
                 decisionHandler(.download)
                 return
