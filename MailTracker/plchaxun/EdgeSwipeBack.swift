@@ -62,18 +62,23 @@ final class FullScreenPanGesture: UIPanGestureRecognizer {}
 // 返回手势过半时的轻震动（与参考 dylib 一致，弱=light）
 final class FBSHaptic: NSObject {
     static let shared = FBSHaptic()
+    private var generator: UIImpactFeedbackGenerator?
     private var hasHaptic = false
     @objc func track(_ g: UIPanGestureRecognizer) {
         let w = UIScreen.main.bounds.width
         switch g.state {
         case .began:
             hasHaptic = false
+            generator = UIImpactFeedbackGenerator(style: .light)
+            generator?.prepare()
         case .changed:
             let tx = g.translation(in: g.view).x
-            if !hasHaptic && tx > w * 0.5 {
+            if !hasHaptic && tx > w * 0.35 {
                 hasHaptic = true
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                generator?.impactOccurred(intensity: 0.5)
             }
+        case .ended, .cancelled, .failed:
+            generator = nil
         default: break
         }
     }
@@ -93,6 +98,8 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
     func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
         guard let pan = g as? UIPanGestureRecognizer,
               let nav = nav(of: g.view) else { return false }
+        // 页面自行拦截时（如网址助手还有网页历史，需先网页后退）不触发系统pop
+        if FullScreenBack.blockPop { return false }
         // 只有导航栈多于一页才允许返回
         guard nav.viewControllers.count > 1 else { return false }
         let t = pan.translation(in: g.view)
@@ -103,6 +110,8 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
 }
 
 enum FullScreenBack {
+    /// 页面内有需要优先处理的返回（网址助手网页历史）时置 true，拦截系统全屏pop
+    static var blockPop = false
     private static func install(on nav: UINavigationController) {
         if nav.view.gestureRecognizers?.contains(where: { $0 is FullScreenPanGesture }) == true { return }
         // KVC 拿到系统边缘返回手势的 target（_UINavigationInteractiveTransition），
