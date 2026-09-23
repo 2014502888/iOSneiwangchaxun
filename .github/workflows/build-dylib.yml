@@ -8,33 +8,17 @@ on:
 
 jobs:
   dylib:
-    runs-on: macos-15
-    env:
-      THEOS: /opt/theos
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git /opt/theos
-          sudo chown -R "$(id -un)" /opt/theos
-          brew install ldid
-          echo "PATH=/opt/theos/bin:$PATH" >> $GITHUB_PATH
-
-      - name: Build tweak
-        continue-on-error: true
-        run: |
-          cd tweak
-          make clean
-          make 2>&1 | tee build.log
-          echo "----- exit: $? -----"
-          find . -name "*.dylib" || true
-
-      - name: Upload build log (always)
-        if: always()
+        uses: apple-actions/setup-theos@v1
+        with:
+          version: 'master'
+      - name: Build
+        run: cd tweak && package=1 make
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: dylib-build-log
-          path: |
-            tweak/build.log
-            tweak/.theos/**
+          name: FullScreenBackTweak-dylib
+          path: tweak/.theos/_/*.dylib
