@@ -74,7 +74,8 @@ struct WebHelperWebView: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
-        webView.allowsBackForwardNavigationGestures = true
+        // 关闭系统网页后退手势：由页面手势统一处理（左滑无上一页时可返回主界面）
+        webView.allowsBackForwardNavigationGestures = false
         webView.tag = 1000 + index
         if site.needWechatUA {
             webView.customUserAgent = WebHelperConfig.wechatUA
@@ -298,7 +299,8 @@ struct WebHelperView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
-        // 右边缘左滑：网页返回上一页（左边缘是系统网页后退，此手势只补右侧）
+        // 边缘手势：左边缘右滑 → 有上一页则网页返回上一页，没有则返回主界面；
+        // 右边缘左滑 → 仅网页返回上一页
         .highPriorityGesture(
             DragGesture(minimumDistance: 25)
                 .onEnded { value in
@@ -307,9 +309,15 @@ struct WebHelperView: View {
                     let dx = value.translation.width
                     let dy = value.translation.height
                     guard abs(dy) < 80 else { return }
-                    guard sx > w - 45 && dx < -70 else { return }
-                    if let wv = webView(at: currentIndex), wv.canGoBack {
-                        wv.goBack()
+                    guard let wv = webView(at: currentIndex) else { return }
+                    if sx < 45 && dx > 70 {
+                        if wv.canGoBack {
+                            wv.goBack()
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } else if sx > w - 45 && dx < -70 {
+                        if wv.canGoBack { wv.goBack() }
                     }
                 }
         )
