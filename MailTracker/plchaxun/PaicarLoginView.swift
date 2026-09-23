@@ -114,7 +114,7 @@ struct PaicarLoginView: View {
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text("寄递派车")
                     .font(.system(size: 18, weight: .bold))
@@ -245,7 +245,7 @@ struct PaicarHomeView: View {
                     // 返回根（退出派车模块）
                     NotificationCenter.default.post(name: .paicarBackToRoot, object: nil)
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text(tab == 0 ? "派车单" : (tab == 1 ? "看板" : "我的"))
                     .font(.system(size: 18, weight: .bold))

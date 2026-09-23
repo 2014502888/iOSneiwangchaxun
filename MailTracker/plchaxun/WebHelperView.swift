@@ -300,11 +300,13 @@ struct WebHelperView: View {
     private var topBar: some View {
         HStack(spacing: 0) {
             Button {
-                goBack()
+                presentationMode.wrappedValue.dismiss()
             } label: {
-                Text("←")
-                    .font(.system(size: 22))
-                    .frame(width: 40, height: 44)
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             Text(title)
                 .font(.system(size: 17, weight: .bold))
@@ -352,16 +354,6 @@ struct WebHelperView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 52)
         .background(bg)
-    }
-
-    private func goBack() {
-        // 返回网页上一页；无上一页时提示（对应安卓防误触：首页再滑一次返回桌面）
-        guard let webView = webView(at: currentIndex) else { return }
-        if webView.canGoBack {
-            webView.goBack()
-        } else {
-            showToast("再滑动一次返回")
-        }
     }
 
     private func reload() {
@@ -417,9 +409,11 @@ struct WebHelperAccountView: View {
                     Button {
                         presentationMode.wrappedValue.dismiss()
                     } label: {
-                        Text("←")
-                            .font(.system(size: 26))
-                            .frame(width: 40, height: 44)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     Text("账号密码管理")
                         .font(.system(size: 17, weight: .bold))

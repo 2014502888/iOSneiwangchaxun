@@ -59,7 +59,7 @@ struct PaicarDetailView: View {
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text("详情")
                     .font(.system(size: 18, weight: .bold))
@@ -383,7 +383,7 @@ struct PaicarApplyDetailView: View {
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text("详情")
                     .font(.system(size: 18, weight: .bold))

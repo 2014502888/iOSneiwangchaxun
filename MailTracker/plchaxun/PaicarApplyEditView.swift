@@ -43,7 +43,7 @@ struct PaicarApplyEditView: View {
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text(postId == nil ? "登记申请单" : "编辑申请单")
                     .font(.system(size: 18, weight: .bold))
@@ -446,7 +446,7 @@ struct PaicarArrangeView: View {
                 Button {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
-                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 Text("分配车辆")
                     .font(.system(size: 18, weight: .bold))

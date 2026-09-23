@@ -19,14 +19,9 @@ struct RootView: View {
                         .padding(.top, 24)
                         .padding(.bottom, 12)
 
-                    entryButton("内网查询") { InternalView() }
-                    entryButton("外网查询") { ExternalView() }
-                    entryButton("网址助手") { WebHelperView() }
-                    entryButton("远程开机") { RemoteBootView() }
-
                     // 派车模块（受控 pop：内部发 paicarBackToRoot 通知可退出）
                     NavigationLink(destination: PaicarModuleView().paicarAuthGuard(), isActive: $showPaicar) {
-                        Text("寄递派车")
+                        Text("快递派车")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 40)
@@ -34,6 +29,11 @@ struct RootView: View {
                             .background(blue)
                             .cornerRadius(25)
                     }
+
+                    entryButton("外网查询", color: green) { ExternalView() }
+                    entryButton("内网查询", color: yellow) { InternalView() }
+                    entryButton("网址助手", color: orange) { WebHelperView() }
+                    entryButton("远程开机", color: purple) { RemoteBootView() }
 
                     Spacer().frame(height: 24)
                 }
@@ -50,16 +50,21 @@ struct RootView: View {
         }
     }
 
-    private var blue: Color { Color(red: 0.08, green: 0.28, blue: 0.75) }
+    // 胶囊五色：蓝-绿-黄-橙-紫（与安卓 Flutter 首页一致）
+    private var blue: Color { Color(red: 0.13, green: 0.59, blue: 0.95) }    // #2196F3
+    private var green: Color { Color(red: 0.30, green: 0.69, blue: 0.31) }   // #4CAF50
+    private var yellow: Color { Color(red: 0.98, green: 0.66, blue: 0.15) }  // #F9A825
+    private var orange: Color { Color(red: 1.0, green: 0.60, blue: 0.0) }    // #FF9800
+    private var purple: Color { Color(red: 0.61, green: 0.15, blue: 0.69) }  // #9C27B0
 
-    private func entryButton<D: View>(_ title: String, @ViewBuilder destination: @escaping () -> D) -> some View {
+    private func entryButton<D: View>(_ title: String, color: Color, @ViewBuilder destination: @escaping () -> D) -> some View {
         NavigationLink(destination: destination(), label: {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 40)
                 .padding(.vertical, 16)
-                .background(blue)
+                .background(color)
                 .cornerRadius(25)
         })
     }

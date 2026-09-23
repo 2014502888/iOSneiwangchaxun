@@ -316,8 +316,10 @@ struct InternalView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.body)
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.blue)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
             }
             // 🆕 清空：导航栏左侧
