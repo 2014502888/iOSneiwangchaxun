@@ -493,28 +493,31 @@ struct InternalView: View {
         } else {
             List {
                 ForEach(currentList) { r in
-                    Button { selectedResult = r } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.mailNum).font(.system(size: 16, weight: .medium))
-                            if let err = r.error {
-                                Text(err).font(.system(size: 14)).foregroundColor(.secondary)
-                            } else if !r.traces.isEmpty {
-                                Text(r.traces[0].time).font(.caption).foregroundColor(.blue)
-                                Text(r.traces[0].title).font(.subheadline).fontWeight(.medium)
-                                if !r.traces[0].desc.isEmpty {
-                                    Text(r.traces[0].desc).font(.system(size: 14)).foregroundColor(.primary).lineLimit(nil)
-                                }
-                                Text("\(r.traces.count)条")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.blue)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(4)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.mailNum).font(.system(size: 16, weight: .medium))
+                        if let err = r.error {
+                            Text(err).font(.system(size: 14)).foregroundColor(.secondary)
+                        } else if !r.traces.isEmpty {
+                            Text(r.traces[0].time).font(.caption).foregroundColor(.blue)
+                            Text(r.traces[0].title).font(.subheadline).fontWeight(.medium)
+                            if !r.traces[0].desc.isEmpty {
+                                Text(r.traces[0].desc).font(.system(size: 14)).foregroundColor(.primary).lineLimit(nil)
                             }
+                            Text("\(r.traces.count)条")
+                                .font(.system(size: 12))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(4)
                         }
-                        .padding(.vertical, 4)
-                        Divider().background(Color.gray.opacity(0.2)).padding(.top, 4)
+                    }
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // 与外网一致：行内 onTapGesture 不与 List 的 simultaneousGesture 冲突，点击可进详情
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        selectedResult = r
                     }
                     .listRowBackground(Color(.secondarySystemGroupedBackground))
                     .listRowSeparator(.hidden)
