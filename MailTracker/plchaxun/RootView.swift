@@ -10,39 +10,39 @@ struct RootView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 18) {
-                    Spacer().frame(height: 8)
-                    Text("选择系统")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(fg)
-                        .padding(.top, 24)
-                        .padding(.bottom, 12)
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 选择系统 + 5 个系统 = 6 项内容
+                        Text("选择系统")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(fg)
+                            .padding(.bottom, 12)
 
-                    // 派车模块（受控 pop：内部发 paicarBackToRoot 通知可退出）
-                    NavigationLink(destination: PaicarModuleView().paicarAuthGuard(), isActive: $showPaicar) {
-                        Text("快递派车")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 40)
-                            .padding(.vertical, 16)
-                            .background(blue)
-                            .cornerRadius(25)
+                        // 派车模块（受控 pop：内部发 paicarBackToRoot 通知可退出）
+                        NavigationLink(destination: PaicarModuleView().paicarAuthGuard(), isActive: $showPaicar) {
+                            Text("快递派车")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 40)
+                                .padding(.vertical, 16)
+                                .background(blue)
+                                .cornerRadius(25)
+                        }
+
+                        entryButton("外网查询", color: green) { ExternalView() }
+                        entryButton("内网查询", color: yellow) { InternalView() }
+                        entryButton("网址助手", color: orange) { WebHelperView() }
+                        entryButton("远程开机", color: purple) { RemoteBootView() }
                     }
-
-                    entryButton("外网查询", color: green) { ExternalView() }
-                    entryButton("内网查询", color: yellow) { InternalView() }
-                    entryButton("网址助手", color: orange) { WebHelperView() }
-                    entryButton("远程开机", color: purple) { RemoteBootView() }
-
-                    Spacer().frame(height: 24)
+                    .frame(minHeight: geo.size.height)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
+                .background(pageBg)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .background(pageBg)
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToRoot)) { _ in
