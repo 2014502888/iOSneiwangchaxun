@@ -63,7 +63,7 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
     static let shared = FullScreenBackDelegate()
     func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
         guard let pan = g as? UIPanGestureRecognizer,
-              let nav = EdgeSwipeBack.findNav(g.view) else { return false }
+              let nav = FullScreenBack.nav else { return false }
         // 只有导航栈多于一页才允许返回
         guard nav.viewControllers.count > 1 else { return false }
         let t = pan.translation(in: g.view)
@@ -74,11 +74,13 @@ final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
 }
 
 enum FullScreenBack {
+    static weak var nav: UINavigationController?
     static func install() {
         DispatchQueue.main.async {
             guard let window = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene }).first?.windows.first,
                   let nav = EdgeSwipeBack.findNav(window.rootViewController) else { return }
+            FullScreenBack.nav = nav
             if nav.view.gestureRecognizers?.contains(where: { $0 is FullScreenPanGesture }) == true { return }
             // KVC 拿到系统边缘返回手势的 target（_UINavigationInteractiveTransition），
             // 全屏手势直接驱动它的私有 handleNavigationTransition:，复用系统原生 pop 动画
