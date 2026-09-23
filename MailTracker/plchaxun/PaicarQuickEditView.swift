@@ -15,7 +15,6 @@ struct PaicarQuickEditView: View {
     @State private var loading = true
     @State private var saved = false
     @State private var toastMsg: String?
-    @State private var pickerTarget: (idx: Int, kind: String)?
 
     private var isDark: Bool { colorScheme == .dark }
     private var fg: Color { isDark ? .white : .black }
@@ -139,7 +138,7 @@ struct PaicarQuickEditView: View {
 
             if enabled {
                 pickRow("客户", value: r["customerName"] ?? "", hint: "选择客户") {
-                    pickerTarget = (index, "customer")
+                    showPicker((index, "customer"))
                 }
                 HStack(spacing: 8) {
                     field("件数", text: Binding(
@@ -147,17 +146,17 @@ struct PaicarQuickEditView: View {
                         set: { rows[index]["number"] = $0 }
                     ), keyboard: .numberPad)
                     pickRow("车型", value: r["carSpecs"] ?? "", hint: "选择", compact: true) {
-                        pickerTarget = (index, "spec")
+                        showPicker((index, "spec"))
                     }
                 }
                 pickRow("到达时间", value: r["hour"] ?? "", hint: "选择时间") {
-                    pickerTarget = (index, "hour")
+                    showPicker((index, "hour"))
                 }
                 pickRow("联系人", value: r["liaisonName"] ?? "", hint: "选择联系人") {
-                    pickerTarget = (index, "liaison")
+                    showPicker((index, "liaison"))
                 }
                 pickRow("邮路", value: r["routeName"] ?? "", hint: "选择邮路") {
-                    pickerTarget = (index, "route")
+                    showPicker((index, "route"))
                 }
                 Toggle(isOn: Binding(
                     get: { rows[index]["shipment"] == "1" },

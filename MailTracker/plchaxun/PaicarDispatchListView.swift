@@ -15,7 +15,7 @@ enum PaicarStyle {
 
     /// 邮路去掉固定前缀"晋江南区电商-" / "南区电商-"（含-）
     static func stripRoute(_ name: String) -> String {
-        if name.hasPrefix("晋江南区电商-") { return String(name.dropFirst(6)) }
+        if name.hasPrefix("晋江南区电商-") { return String(name.dropFirst(7)) }
         if name.hasPrefix("南区电商-") { return String(name.dropFirst(5)) }
         return name
     }
@@ -145,14 +145,14 @@ struct PaicarDispatchListView: View {
                             ForEach(renderedItems, id: \.self) { item in
                                 switch item {
                                 case .apply(let o):
-                                    NavigationLink(destination: PaicarApplyDetailView(orderId: o.id).paicarAuthGuard()) {
+                                    NavigationLink(destination: PaicarApplyDetailView(orderId: o.id).paicarAuthGuard(), label: {
                                         applyCard(o)
-                                    }
+                                    })
                                     .buttonStyle(.plain)
                                 case .dispatch(let o):
-                                    NavigationLink(destination: PaicarDetailView(orderId: o.id).paicarAuthGuard()) {
+                                    NavigationLink(destination: PaicarDetailView(orderId: o.id).paicarAuthGuard(), label: {
                                         dispatchCard(o)
-                                    }
+                                    })
                                     .buttonStyle(.plain)
                                 case .hint(let isLast):
                                     moreHint(isLast: isLast)

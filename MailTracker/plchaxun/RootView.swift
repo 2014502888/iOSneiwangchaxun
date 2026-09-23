@@ -53,9 +53,7 @@ struct RootView: View {
     private var blue: Color { Color(red: 0.08, green: 0.28, blue: 0.75) }
 
     private func entryButton<D: View>(_ title: String, @ViewBuilder destination: @escaping () -> D) -> some View {
-        NavigationLink {
-            destination()
-        } label: {
+        NavigationLink(destination: destination(), label: {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)
@@ -63,6 +61,6 @@ struct RootView: View {
                 .padding(.vertical, 16)
                 .background(blue)
                 .cornerRadius(25)
-        }
+        })
     }
 }
