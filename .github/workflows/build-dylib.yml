@@ -9,19 +9,22 @@ on:
 jobs:
   dylib:
     runs-on: macos-15
-    env:
-      THEOS: /opt/theos
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Theos
+      - name: Build dylib with clang
         run: |
-          git clone --recursive https://github.com/theos/theos.git /opt/theos
-          sudo chown -R "$(id -un)" /opt/theos
-          brew install ldid
-      - name: Build
-        run: cd tweak && make
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "SDK: $SDK"
+          clang -arch arm64 -arch arm64e \
+                -isysroot "$SDK" \
+                -dynamiclib -fobjc-arc \
+                -install_name @rpath/FullScreenBackTweak.dylib \
+                -o tweak/FullScreenBackTweak.dylib \
+                tweak/FullScreenBackTweak.m
+          ls -la tweak/
+          file tweak/FullScreenBackTweak.dylib
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: FullScreenBackTweak-dylib
-          path: tweak/.theos/_/*.dylib
+          path: tweak/FullScreenBackTweak.dylib
