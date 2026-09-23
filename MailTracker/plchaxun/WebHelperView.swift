@@ -105,6 +105,8 @@ struct WebHelperWebView: UIViewRepresentable {
         var parent: WebHelperWebView
         weak var webView: WKWebView?
         var lastBackTick = 0
+        /// 网页「上一页」快照：交互式后退时左边露出的预览内容
+        var previousSnapshot: UIImage?
         private var didLoad = false
         private var didAutoFill = false
         private var pendingDownloadFilename: String?
@@ -123,6 +125,12 @@ struct WebHelperWebView: UIViewRepresentable {
         // MARK: 导航
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             parent.progress = 0.1
+            // 前进离开当前页时缓存当前页快照（后退预览用）；后退导航不覆盖
+            if navigation.navigationType != .backForward, webView.canGoBack {
+                webView.takeSnapshot(with: nil) { [weak self] img, _ in
+                    if let img = img { self?.previousSnapshot = img }
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
@@ -139,6 +147,12 @@ struct WebHelperWebView: UIViewRepresentable {
             }
             // 自动填充账号密码（对应安卓 autofillCredentials）
             autoFillIfNeeded(webView)
+            // 后退完成后若还有更早历史，缓存当前页供下次后退预览
+            if navigation.navigationType == .backForward, webView.canGoBack {
+                webView.takeSnapshot(with: nil) { [weak self] img, _ in
+                    if let img = img { self?.previousSnapshot = img }
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -243,6 +257,11 @@ struct WebHelperView: View {
     @State private var downloadTip: String?
     @State private var showShare = false
     @State private var shareURL: URL?
+    // 交互式边缘返回：跟手位移 + 上一页预览（网页上一页 / 主界面）
+    @State private var swipeOffset: CGFloat = 0
+    @State private var swipePreview: UIImage?
+    @State private var swipeActive = false
+    @State private var rootSnapshot: UIImage?
 
     private var isDark: Bool { colorScheme == .dark }
     private var fg: Color { isDark ? .white : .black }
@@ -251,76 +270,116 @@ struct WebHelperView: View {
     private var gray: Color { isDark ? Color(red: 0.69, green: 0.69, blue: 0.69) : Color(red: 0.62, green: 0.62, blue: 0.62) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            // 进度条
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Rectangle().fill(Color.clear)
-                    Rectangle()
-                        .fill(Color(red: 0.1, green: 0.48, blue: 1.0))
-                        .frame(width: geo.size.width * CGFloat(progress))
-                }
+        ZStack(alignment: .leading) {
+            // 交互式返回预览：左边露出的上一页（网页上一页 / 主界面快照）
+            if let img = swipePreview {
+                Image(uiImage: img)
+                    .resizable()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             }
-            .frame(height: 3)
-            .opacity(progress >= 1.0 || progress <= 0 ? 0 : 1)
-
-            // 5 个站点 WebView 常驻切换
-            ZStack {
-                ForEach(0..<WebHelperConfig.sites.count, id: \.self) { i in
-                    WebHelperWebView(
-                        site: WebHelperConfig.sites[i],
-                        index: i,
-                        backTick: backTick,
-                        isActive: currentIndex == i,
-                        progress: $progress,
-                        title: $title,
-                        canGoBack: $canGoBack,
-                        onDownloadFinish: { tip in
-                            downloadTip = tip
-                            if tip.hasPrefix("下载失败") {
-                                showToast(tip)
-                            } else if let fileURL = downloadsDir()?.appendingPathComponent(tip), FileManager.default.fileExists(atPath: fileURL.path) {
-                                shareURL = fileURL
-                                showShare = true
-                            } else {
-                                showToast(tip)
-                            }
-                        },
-                        isDark: isDark
-                    )
-                    .opacity(i == currentIndex ? 1 : 0)
-                    .allowsHitTesting(i == currentIndex)
+            VStack(spacing: 0) {
+                topBar
+                // 进度条
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(Color.clear)
+                        Rectangle()
+                            .fill(Color(red: 0.1, green: 0.48, blue: 1.0))
+                            .frame(width: geo.size.width * CGFloat(progress))
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(height: 3)
+                .opacity(progress >= 1.0 || progress <= 0 ? 0 : 1)
 
-            bottomTabs
+                // 5 个站点 WebView 常驻切换
+                ZStack {
+                    ForEach(0..<WebHelperConfig.sites.count, id: \.self) { i in
+                        WebHelperWebView(
+                            site: WebHelperConfig.sites[i],
+                            index: i,
+                            backTick: backTick,
+                            isActive: currentIndex == i,
+                            progress: $progress,
+                            title: $title,
+                            canGoBack: $canGoBack,
+                            onDownloadFinish: { tip in
+                                downloadTip = tip
+                                if tip.hasPrefix("下载失败") {
+                                    showToast(tip)
+                                } else if let fileURL = downloadsDir()?.appendingPathComponent(tip), FileManager.default.fileExists(atPath: fileURL.path) {
+                                    shareURL = fileURL
+                                    showShare = true
+                                } else {
+                                    showToast(tip)
+                                }
+                            },
+                            isDark: isDark
+                        )
+                        .opacity(i == currentIndex ? 1 : 0)
+                        .allowsHitTesting(i == currentIndex)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                bottomTabs
+            }
+            .offset(x: swipeOffset)
         }
         .background(pageBg)
+        .clipped()
         .navigationBarHidden(true)
-        // 边缘手势：左边缘右滑 → 有上一页则网页返回上一页，没有则返回主界面；
-        // 右边缘左滑 → 仅网页返回上一页
+        // 交互式边缘手势：左缘右滑 → 有上一页则网页后退、没有则返回主界面；右缘左滑 → 仅网页后退
+        // 跟手拖动、左边露出上一页预览；回滑或未过半松手取消，过半/快速滑动才真正触发
         .highPriorityGesture(
             DragGesture(minimumDistance: 25)
-                .onEnded { value in
+                .onChanged { value in
                     let w = UIScreen.main.bounds.width
                     let sx = value.startLocation.x
                     let dx = value.translation.width
                     let dy = value.translation.height
-                    guard abs(dy) < 80 else { return }
-                    guard let wv = webView(at: currentIndex) else { return }
-                    if sx < 45 && dx > 70 {
-                        if wv.canGoBack {
-                            wv.goBack()
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
+                    guard abs(dy) < 80, let wv = webView(at: currentIndex) else { return }
+                    let snap = (wv.navigationDelegate as? WebHelperWebView.Coordinator)?.previousSnapshot
+                    if sx < 45 && dx > 0 {
+                        swipeActive = true
+                        // 有网页历史 → 预览网页上一页；无历史 → 预览主界面（返回主界面）
+                        swipePreview = wv.canGoBack ? snap : rootSnapshot
+                        swipeOffset = min(max(0, dx), w)
+                    } else if sx > w - 45 && dx < 0 {
+                        swipeActive = true
+                        swipePreview = snap
+                        swipeOffset = min(max(0, -dx), w)
+                    }
+                }
+                .onEnded { value in
+                    guard swipeActive else { return }
+                    swipeActive = false
+                    let w = UIScreen.main.bounds.width
+                    let isLeftEdge = value.startLocation.x < 45
+                    let shouldPop = swipeOffset > w * 0.4 || abs(value.predictedEndTranslation.width) > w * 0.35
+                    guard let wv = webView(at: currentIndex) else {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
+                        swipePreview = nil
+                        return
+                    }
+                    if shouldPop {
+                        withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            swipeOffset = 0
+                            swipePreview = nil
+                            if wv.canGoBack {
+                                wv.goBack()
+                            } else if isLeftEdge {
+                                presentationMode.wrappedValue.dismiss()
+                            }
                         }
-                    } else if sx > w - 45 && dx < -70 {
-                        if wv.canGoBack { wv.goBack() }
+                    } else {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
+                        swipePreview = nil
                     }
                 }
         )
+        .onAppear { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }

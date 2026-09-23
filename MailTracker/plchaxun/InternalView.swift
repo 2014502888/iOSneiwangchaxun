@@ -305,7 +305,7 @@ struct InternalView: View {
             EdgeSwipeBack.disableSystemPop()
         }
         .navigationBarBackButtonHidden(true)
-        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
+        .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .ignoresSafeArea(.keyboard)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

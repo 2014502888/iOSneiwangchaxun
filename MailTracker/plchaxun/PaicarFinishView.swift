@@ -141,7 +141,7 @@ struct PaicarFinishView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
-        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
+        .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
             if order == nil { load() }
         }

@@ -78,7 +78,7 @@ struct PaicarModuleView: View {
             navMode = (note.userInfo?["mode"] as? String) ?? ""
             navTarget = .finish
         }
-        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
+        .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
     }
 
     private func autoLogin() {

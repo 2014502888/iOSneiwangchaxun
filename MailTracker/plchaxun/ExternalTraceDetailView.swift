@@ -196,7 +196,7 @@ struct ExternalTraceDetailView: View {
         .textSelection(.disabled)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .edgeSwipeBack { dismiss() }
+        .interactiveEdgeSwipeBack { dismiss() }
         .background(
             Group {
                 if colorScheme == .dark {

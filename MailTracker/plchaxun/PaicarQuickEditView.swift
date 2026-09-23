@@ -93,7 +93,7 @@ struct PaicarQuickEditView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
-        .edgeSwipeBack { presentationMode.wrappedValue.dismiss() }
+        .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
             if rows.isEmpty { load() }
         }
