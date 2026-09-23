@@ -75,6 +75,7 @@ struct RemoteBootView: View {
         .background(pageBg)
         .navigationBarHidden(true)
         .onAppear {
+            EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() }
             let d = UserDefaults.standard
             remember = d.bool(forKey: "rb_remember")
             if remember {
@@ -164,7 +165,7 @@ struct RemoteBootView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 48)
         .disabled(isLoading)
     }
 
@@ -196,11 +197,11 @@ struct RemoteBootView: View {
                             Text(device.name)
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(fg)
-                            Spacer()
-                            Text("›")
+                            Text(" ›")
                                 .font(.system(size: 18))
                                 .foregroundColor(sub)
                         }
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                     }
                     if index < devices.count - 1 {

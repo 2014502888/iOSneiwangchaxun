@@ -24,8 +24,9 @@ struct ExternalView: View {
             }
             resultContent
         }
-        .navigationTitle("")
+        .navigationTitle("外网查询")
         .onAppear {
+            EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() }
             NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in keyboardVisible = true }
             NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in keyboardVisible = false }
         }

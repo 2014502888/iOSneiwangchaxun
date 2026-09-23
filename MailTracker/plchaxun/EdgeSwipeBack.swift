@@ -1,11 +1,44 @@
 import SwiftUI
 import UIKit
 
-// 全局返回手势：根页面（无返回栈）时禁止边缘滑动返回，避免误触返回桌面
-// 注：Swift 不允许在 extension 中 override viewDidLoad（编译错误），
-// 系统默认行为即为"根页面不触发返回手势"，故直接移除 override，保留手势判定供 delegate 使用
-extension UINavigationController: UIGestureRecognizerDelegate {
-    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        return viewControllers.count > 1
+// MARK: - 全局边缘滑动返回
+// 左边缘：启用系统 interactivePopGestureRecognizer（iOS 原生右滑返回）
+// 右边缘：UIScreenEdgePanGestureRecognizer（从屏幕右边缘左滑）触发当前页面退出
+// 用法：页面 .onAppear { EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() } }
+enum EdgeSwipeBack {
+    static var onRightSwipe: (() -> Void)?
+    private static var pan: UIScreenEdgePanGestureRecognizer?
+
+    static func enable(_ dismiss: @escaping () -> Void) {
+        onRightSwipe = dismiss
+        DispatchQueue.main.async {
+            guard let window = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first?.windows.first else { return }
+            // 启用系统左边缘右滑返回（NavigationView 内部是 UINavigationController）
+            findNav(window.rootViewController)?.interactivePopGestureRecognizer?.isEnabled = true
+            if pan == nil {
+                let p = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(panRight(_:)))
+                p.edges = .right
+                window.addGestureRecognizer(p)
+                pan = p
+            }
+        }
+    }
+
+    @objc private static func panRight(_ g: UIScreenEdgePanGestureRecognizer) {
+        if g.state == .ended { onRightSwipe?() }
+    }
+
+    private static func findNav(_ vc: UIViewController?) -> UINavigationController? {
+        if let n = vc as? UINavigationController { return n }
+        if let tab = vc as? UITabBarController {
+            for c in tab.viewControllers ?? [] {
+                if let n = findNav(c) { return n }
+            }
+        }
+        for c in vc?.children ?? [] {
+            if let n = findNav(c) { return n }
+        }
+        return nil
     }
 }

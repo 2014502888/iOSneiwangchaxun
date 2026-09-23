@@ -377,7 +377,7 @@ struct PaicarFinishView: View {
                 // 1) 上传未传照片
                 for i in draftImages.indices where !draftImages[i].uploaded {
                     let d = draftImages[i]
-                    let r = try await PaicarApi.uploadImage(fileData: d.data, fileName: d.fileName, extra: ["id": orderId])
+                    let r = try await PaicarApi.uploadImage(fileData: d.data, fileName: d.fileName, extra: [("id", orderId)])
                     let code = ((r["data"] as? [String: Any])?["code"])
                     let codeInt = (code as? NSNumber)?.intValue ?? ((code as? String) == "1" ? 1 : 0)
                     if codeInt != 1 {
@@ -416,7 +416,7 @@ struct PaicarFinishView: View {
             do {
                 for i in draftImages.indices where !draftImages[i].uploaded {
                     let d = draftImages[i]
-                    let r = try await PaicarApi.uploadImage(fileData: d.data, fileName: d.fileName, extra: ["id": orderId])
+                    let r = try await PaicarApi.uploadImage(fileData: d.data, fileName: d.fileName, extra: [("id", orderId)])
                     let code = ((r["data"] as? [String: Any])?["code"])
                     let codeInt = (code as? NSNumber)?.intValue ?? ((code as? String) == "1" ? 1 : 0)
                     if codeInt != 1 {

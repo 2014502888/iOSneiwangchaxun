@@ -1,6 +1,8 @@
 import Foundation
 
 // MARK: - 寄递派车 API 客户端（对应 PaicarApi.kt，PhalApi sign 签名）
+// 签名/参数顺序与安卓、Flutter 完全一致：keys 用「插入顺序」（s→业务参数→token→user_id→timestamp→sign→keys），
+// 登录 platform 固定 android（服务端仅接受该值）。此前的 sorted() 导致 keys 顺序不同、接口被服务端拒绝。
 
 enum PaicarApi {
     static let base = "http://119.91.30.146/a/car/phalapi/public/"
@@ -18,18 +20,24 @@ enum PaicarApi {
 
     static func makePwd(_ plain: String) -> String { paicarMD5(salt + plain) }
 
-    private static func signed(service: String, params: [String: String]) -> [String: String] {
+    /// 与安卓 signed() 完全一致：
+    /// 1) 参数按「插入顺序」追加：s → 业务参数 → token → user_id → timestamp
+    /// 2) sign = MD5(按 key 字母序拼接的 value)
+    /// 3) keys = 「插入顺序」的全部 key 用 & 连接（含 sign、keys），末尾加 &
+    private static func signed(service: String, params: [(String, String)]) -> [String: String] {
         let ts = String(Int(Date().timeIntervalSince1970 * 1000))
-        var all: [String: String] = ["s": service]
-        for (k, v) in params { all[k] = v }
-        all["token"] = token
-        all["user_id"] = userId
-        all["timestamp"] = ts
-        let sortedKeys = all.keys.sorted()
-        let concat = sortedKeys.map { all[$0] ?? "" }.joined()
-        all["sign"] = paicarMD5(concat)
-        all["keys"] = all.keys.sorted().joined(separator: "&") + "&"
-        return all
+        var ordered: [(String, String)] = [("s", service)]
+        ordered.append(contentsOf: params)
+        ordered.append(("token", token))
+        ordered.append(("user_id", userId))
+        ordered.append(("timestamp", ts))
+        let sortedKeys = ordered.map { $0.0 }.sorted()
+        let concat = sortedKeys.map { k in ordered.first(where: { $0.0 == k })?.1 ?? "" }.joined()
+        ordered.append(("sign", paicarMD5(concat)))
+        ordered.append(("keys", ordered.map { $0.0 }.joined(separator: "&") + "&"))
+        var dict: [String: String] = [:]
+        for (k, v) in ordered { dict[k] = v }
+        return dict
     }
 
     private static func parseBody(_ body: String, service: String) throws -> PaicarResult {
@@ -45,7 +53,7 @@ enum PaicarApi {
         return r
     }
 
-    static func get(_ service: String, params: [String: String]) async throws -> PaicarResult {
+    static func get(_ service: String, params: [(String, String)]) async throws -> PaicarResult {
         let signed = signed(service: service, params: params)
         var comps = URLComponents(string: base)!
         var items: [URLQueryItem] = []
@@ -61,7 +69,7 @@ enum PaicarApi {
         return try parseBody(body, service: service)
     }
 
-    static func post(_ service: String, params: [String: String]) async throws -> PaicarResult {
+    static func post(_ service: String, params: [(String, String)]) async throws -> PaicarResult {
         let signed = signed(service: service, params: params)
         let bodyString = signed.map { k, v in
             "\(k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? k)=\(v.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? v)"
@@ -77,7 +85,7 @@ enum PaicarApi {
     }
 
     /// multipart 上传图片（对应 PaicarApi.uploadImage，字段 file）
-    static func uploadImage(fileData: Data, fileName: String, extra: [String: String]) async throws -> [String: Any] {
+    static func uploadImage(fileData: Data, fileName: String, extra: [(String, String)]) async throws -> [String: Any] {
         let signed = signed(service: "App.Upload_uploadImage.go", params: extra)
         let boundary = "paicar-\(Int(Date().timeIntervalSince1970 * 1000))"
         var req = URLRequest(url: URL(string: base)!)
@@ -112,10 +120,10 @@ enum PaicarApi {
 
     static func login(userNo: String, plainPassword: String) async throws -> PaicarLoginInfo {
         let r = try await get("App.User_user.login", params: [
-            "user_no": userNo,
-            "password": makePwd(plainPassword),
-            "version": "1.1.4",
-            "platform": "ios",
+            ("user_no", userNo),
+            ("password", makePwd(plainPassword)),
+            ("version", "1.1.4"),
+            ("platform", "android"),
         ])
         if !r.ok { throw PaicarError.api(r.msg.isEmpty ? "登录失败" : r.msg) }
         let info = PaicarLoginInfo.fromJson(r.dataMap)
@@ -129,15 +137,15 @@ enum PaicarApi {
     }
 
     static func profile() async throws -> [String: Any] {
-        let r = try await get("App.User_user.profile", params: [:])
+        let r = try await get("App.User_user.profile", params: [])
         if !r.ok { throw PaicarError.api("获取资料失败") }
         return (r.dataMap["profile"] as? [String: Any]) ?? [:]
     }
 
     static func changePwd(orgPwd: String, newPwd: String) async throws -> [String: Any] {
         let r = try await get("App.User_user.changePwd", params: [
-            "orgPassword": makePwd(orgPwd),
-            "newPassword": makePwd(newPwd),
+            ("orgPassword", makePwd(orgPwd)),
+            ("newPassword", makePwd(newPwd)),
         ])
         if !r.ok { throw PaicarError.api(r.msg.isEmpty ? "修改失败" : r.msg) }
         return r.dataMap
@@ -146,13 +154,13 @@ enum PaicarApi {
     // MARK: 申请单
 
     static func applyOrderList(organId: String, rolesId: String) async throws -> [[String: Any]] {
-        let r = try await get("App.DispatchCar_applyOrder.getList", params: ["organ_id": organId, "roles_id": rolesId])
+        let r = try await get("App.DispatchCar_applyOrder.getList", params: [("organ_id", organId), ("roles_id", rolesId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func applyOrderDetail(id: String) async throws -> [String: Any] {
-        let r = try await get("App.DispatchCar_applyOrder.getDetail", params: ["id": id])
+        let r = try await get("App.DispatchCar_applyOrder.getDetail", params: [("id", id)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return (r.dataMap["order"] as? [String: Any]) ?? [:]
     }
@@ -160,27 +168,27 @@ enum PaicarApi {
     static func applyOrderSave(id: String?, organId: String, customerListJson: String,
                                arrivalTime: String, number: String, liaisonId: String,
                                routeId: String, carSpecs: String, remarks: String) async throws -> PaicarResult {
-        var p: [String: String] = [
-            "organ_id": organId,
-            "customerList": customerListJson,
-            "arrivalTime": arrivalTime,
-            "number": number,
-            "liaison_id": liaisonId,
-            "route_id": routeId,
-            "carSpecs": carSpecs,
-            "remarks": remarks,
+        var p: [(String, String)] = [
+            ("organ_id", organId),
+            ("customerList", customerListJson),
+            ("arrivalTime", arrivalTime),
+            ("number", number),
+            ("liaison_id", liaisonId),
+            ("route_id", routeId),
+            ("carSpecs", carSpecs),
+            ("remarks", remarks),
         ]
-        if let id = id, !id.isEmpty { p["id"] = id }
+        if let id = id, !id.isEmpty { p.append(("id", id)) }
         let service = (id != nil && !id!.isEmpty) ? "App.DispatchCar_applyOrder.update" : "App.DispatchCar_applyOrder.insert"
         return try await post(service, params: p)
     }
 
     static func applyOrderAction(id: String, action: String) async throws -> PaicarResult {
-        try await post("App.DispatchCar_applyOrder.\(action)", params: ["id": id])
+        try await post("App.DispatchCar_applyOrder.\(action)", params: [("id", id)])
     }
 
     static func applyOrderCheckNotFinishBill(organId: String) async throws -> [String: Any] {
-        let r = try await get("App.DispatchCar_applyOrder.checkNotFinishBill", params: ["organ_id": organId])
+        let r = try await get("App.DispatchCar_applyOrder.checkNotFinishBill", params: [("organ_id", organId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataMap
     }
@@ -189,90 +197,90 @@ enum PaicarApi {
 
     static func dispatchOrderList(organId: String, rolesId: String, page: Int, perpage: Int) async throws -> [[String: Any]] {
         let r = try await get("App.DispatchCar_dispatchOrder.getList", params: [
-            "organ_id": organId, "roles_id": rolesId,
-            "page": "\(page)", "perpage": "\(perpage)",
+            ("organ_id", organId), ("roles_id", rolesId),
+            ("page", "\(page)"), ("perpage", "\(perpage)"),
         ])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func dispatchOrderDetail(id: String) async throws -> [String: Any] {
-        let r = try await get("App.DispatchCar_dispatchOrder.getDetail", params: ["id": id])
+        let r = try await get("App.DispatchCar_dispatchOrder.getDetail", params: [("id", id)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataMap
     }
 
     static func dispatch(organId: String, carOrganId: String, carSpecsId: String, orderIdList: String) async throws -> PaicarResult {
         try await post("App.DispatchCar_dispatchOrder.dispatch", params: [
-            "organ_id": organId, "carOrgan_id": carOrganId,
-            "carSpecs_id": carSpecsId, "order_id_list": orderIdList,
+            ("organ_id", organId), ("carOrgan_id", carOrganId),
+            ("carSpecs_id", carSpecsId), ("order_id_list", orderIdList),
         ])
     }
 
     static func arrangeCar(id: String, carNo: String, driverId: String) async throws -> PaicarResult {
         try await post("App.DispatchCar_dispatchOrder.arrangeCar", params: [
-            "id": id, "carNo": carNo, "driver_id": driverId,
+            ("id", id), ("carNo", carNo), ("driver_id", driverId),
         ])
     }
 
     static func finish(id: String, leaveTime: String, finishDesc: String, loadingNum: String) async throws -> PaicarResult {
         try await post("App.DispatchCar_dispatchOrder.finish", params: [
-            "id": id, "leaveTime": leaveTime, "finishDesc": finishDesc, "loadingNum": loadingNum,
+            ("id", id), ("leaveTime", leaveTime), ("finishDesc", finishDesc), ("loadingNum", loadingNum),
         ])
     }
 
     static func dispatchAction(id: String, action: String) async throws -> PaicarResult {
-        try await post("App.DispatchCar_dispatchOrder.\(action)", params: ["id": id])
+        try await post("App.DispatchCar_dispatchOrder.\(action)", params: [("id", id)])
     }
 
     static func deleteImage(id: String, file: String) async throws -> PaicarResult {
-        try await post("App.DispatchCar_dispatchOrder.deleteImage", params: ["id": id, "file": file])
+        try await post("App.DispatchCar_dispatchOrder.deleteImage", params: [("id", id), ("file", file)])
     }
 
     // MARK: 基础数据
 
     static func getCarSpecs() async throws -> [[String: Any]] {
-        let r = try await get("App.Base_data.getCarSpecs", params: [:])
+        let r = try await get("App.Base_data.getCarSpecs", params: [])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getDriver(organId: String, name: String = "") async throws -> [[String: Any]] {
-        var p = ["organ_id": organId]
-        if !name.isEmpty { p["name"] = name }
+        var p: [(String, String)] = [("organ_id", organId)]
+        if !name.isEmpty { p.append(("name", name)) }
         let r = try await get("App.Base_data.getDriver", params: p)
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getLiaison(organId: String) async throws -> [[String: Any]] {
-        let r = try await get("App.Base_data.getLiaison", params: ["organ_id": organId])
+        let r = try await get("App.Base_data.getLiaison", params: [("organ_id", organId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getFleetList(organId: String) async throws -> [[String: Any]] {
-        let r = try await get("App.Base_organ.getFleetList", params: ["organ_id": organId])
+        let r = try await get("App.Base_organ.getFleetList", params: [("organ_id", organId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getFleetCarList(organId: String, specsId: String, carNo: String = "") async throws -> [[String: Any]] {
-        var p = ["organ_id": organId, "specs_id": specsId]
-        if !carNo.isEmpty { p["carNo"] = carNo }
+        var p: [(String, String)] = [("organ_id", organId), ("specs_id", specsId)]
+        if !carNo.isEmpty { p.append(("carNo", carNo)) }
         let r = try await get("App.Base_fleetCar.getList", params: p)
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getRouteList(organId: String) async throws -> [[String: Any]] {
-        let r = try await get("App.Base_drivieRoute.getList", params: ["organ_id": organId])
+        let r = try await get("App.Base_drivieRoute.getList", params: [("organ_id", organId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
 
     static func getCustomer(organId: String) async throws -> [[String: Any]] {
-        let r = try await get("App.Base_customer.getCustomer", params: ["organ_id": organId])
+        let r = try await get("App.Base_customer.getCustomer", params: [("organ_id", organId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList
     }
@@ -280,13 +288,13 @@ enum PaicarApi {
     // MARK: 看板
 
     static func applyOrderGather(organId: String, rolesId: String) async throws -> [String: Any] {
-        let r = try await get("App.DispatchCar_applyOrder.getGather", params: ["organ_id": organId, "roles_id": rolesId])
+        let r = try await get("App.DispatchCar_applyOrder.getGather", params: [("organ_id", organId), ("roles_id", rolesId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList.first ?? [:]
     }
 
     static func dispatchOrderGather(organId: String, rolesId: String) async throws -> [String: Any] {
-        let r = try await get("App.DispatchCar_dispatchOrder.getGather", params: ["organ_id": organId, "roles_id": rolesId])
+        let r = try await get("App.DispatchCar_dispatchOrder.getGather", params: [("organ_id", organId), ("roles_id", rolesId)])
         if !r.ok { throw PaicarError.api(r.msg) }
         return r.dataList.first ?? [:]
     }
@@ -348,14 +356,14 @@ enum PaicarApi {
         let jsonData = try JSONSerialization.data(withJSONObject: cust)
         let json = String(data: jsonData, encoding: .utf8) ?? ""
         let r = try await post("App.DispatchCar_applyOrder.insert", params: [
-            "organ_id": profile.organId,
-            "customerList": json,
-            "arrivalTime": quickArrival(hour: spec["hour"] ?? "20:00"),
-            "number": spec["number"] ?? "1000",
-            "liaison_id": spec["liaisonId"] ?? "",
-            "route_id": spec["routeId"] ?? "",
-            "carSpecs": spec["carSpecs"] ?? "",
-            "remarks": "",
+            ("organ_id", profile.organId),
+            ("customerList", json),
+            ("arrivalTime", quickArrival(hour: spec["hour"] ?? "20:00")),
+            ("number", spec["number"] ?? "1000"),
+            ("liaison_id", spec["liaisonId"] ?? ""),
+            ("route_id", spec["routeId"] ?? ""),
+            ("carSpecs", spec["carSpecs"] ?? ""),
+            ("remarks", ""),
         ])
         if !r.ok { throw PaicarError.api(r.msg.isEmpty ? "申请失败" : r.msg) }
         let id = (r.dataMap["id"] as? String) ?? ""
@@ -365,8 +373,8 @@ enum PaicarApi {
 
     /// 一键撤回并删除：001 先撤回成 000 再删；000 直接删
     static func quickRecall(id: String) async throws {
-        try? await post("App.DispatchCar_applyOrder.recall", params: ["id": id])
-        let r2 = try await post("App.DispatchCar_applyOrder.delete", params: ["id": id])
+        try? await post("App.DispatchCar_applyOrder.recall", params: [("id", id)])
+        let r2 = try await post("App.DispatchCar_applyOrder.delete", params: [("id", id)])
         if !r2.ok { throw PaicarError.api(r2.msg.isEmpty ? "删除失败" : r2.msg) }
     }
 

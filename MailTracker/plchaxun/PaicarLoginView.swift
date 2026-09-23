@@ -40,9 +40,13 @@ struct PaicarModuleView: View {
             }
         )
         .onAppear {
-            loggedIn = PaicarSession.savedUserNo.isEmpty == false
-                && PaicarSession.savedUserPwd.isEmpty == false
-                && PaicarApi.token.isEmpty == false
+            EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() }
+            // 自动登录：已有有效 token 直接进主页；有保存账号密码则自动调登录
+            if PaicarSession.loggedIn {
+                loggedIn = true
+            } else if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
+                autoLogin()
+            }
             PaicarApi.onAuthExpired = {
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: .paicarAuthExpired, object: nil)
@@ -73,6 +77,20 @@ struct PaicarModuleView: View {
             navOrderId = (note.userInfo?["orderId"] as? String) ?? ""
             navMode = (note.userInfo?["mode"] as? String) ?? ""
             navTarget = .finish
+        }
+    }
+
+    private func autoLogin() {
+        let u = PaicarSession.savedUserNo
+        let p = PaicarSession.savedUserPwd
+        Task {
+            do {
+                let info = try await PaicarApi.login(userNo: u, plainPassword: p)
+                PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                await MainActor.run { loggedIn = true }
+            } catch {
+                await MainActor.run { loggedIn = false }
+            }
         }
     }
 

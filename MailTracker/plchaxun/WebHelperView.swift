@@ -275,6 +275,7 @@ struct WebHelperView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        .onAppear { EdgeSwipeBack.enable { presentationMode.wrappedValue.dismiss() } }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }
