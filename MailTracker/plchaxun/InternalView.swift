@@ -355,7 +355,7 @@ struct InternalView: View {
         .alert("登录会话已失效", isPresented: $showSessionExpiredAlert) {
             Button("知道了", role: .cancel) {}
         }
-        .alert("请先导入 HAR 抓包文件", isPresented: $showNoHarAlert) {
+        .alert("请先导入文件", isPresented: $showNoHarAlert) {
             Button("知道了", role: .cancel) {}
         }
     }

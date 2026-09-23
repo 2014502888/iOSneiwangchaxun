@@ -75,6 +75,7 @@ struct WebHelperWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
+        webView.tag = 1000 + index
         if site.needWechatUA {
             webView.customUserAgent = WebHelperConfig.wechatUA
         } else if site.desktopUA {
@@ -297,6 +298,21 @@ struct WebHelperView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        // 右边缘左滑：网页返回上一页（左边缘是系统网页后退，此手势只补右侧）
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 25)
+                .onEnded { value in
+                    let w = UIScreen.main.bounds.width
+                    let sx = value.startLocation.x
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    guard abs(dy) < 80 else { return }
+                    guard sx > w - 45 && dx < -70 else { return }
+                    if let wv = webView(at: currentIndex), wv.canGoBack {
+                        wv.goBack()
+                    }
+                }
+        )
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }
@@ -395,17 +411,17 @@ struct WebHelperView: View {
     }
 
     private func webView(at index: Int) -> WKWebView? {
-        // 通过 UIKit 层级查找当前 tab 的 WKWebView
+        // 通过 UIKit 层级按 tag 查找当前 tab 的 WKWebView（tag = 1000 + index）
         guard let host = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene }).first?.windows.first else { return nil }
-        return findWebView(in: host.rootViewController?.view)
+        return findWebView(in: host.rootViewController?.view, tag: 1000 + index)
     }
 
-    private func findWebView(in view: UIView?) -> WKWebView? {
+    private func findWebView(in view: UIView?, tag: Int) -> WKWebView? {
         guard let view = view else { return nil }
-        if let wv = view as? WKWebView { return wv }
+        if let wv = view as? WKWebView, wv.tag == tag { return wv }
         for sub in view.subviews {
-            if let found = findWebView(in: sub) { return found }
+            if let found = findWebView(in: sub, tag: tag) { return found }
         }
         return nil
     }
