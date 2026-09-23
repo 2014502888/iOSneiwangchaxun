@@ -82,6 +82,7 @@ struct PaicarDispatchListView: View {
     @State private var finishedLoadedOnce = false
     @State private var finishedMoreCooldown = false
     @State private var finishedCursor = ""   // 当前已显示到哪一天（yyyy-MM-dd）
+    @State private var didInitialLoad = false   // 首次进入必加载（修复 onAppear 守卫 !loading 把首次加载挡住导致永远转圈）
 
     // UI
     @State private var toastMsg: String?
@@ -204,7 +205,10 @@ struct PaicarDispatchListView: View {
             Button("取消", role: .cancel) {}
         }
         .onAppear {
-            if !loading && applies.isEmpty && dispatches.isEmpty && finishedList.isEmpty {
+            if !didInitialLoad {
+                didInitialLoad = true
+                load()
+            } else if !loading && applies.isEmpty && dispatches.isEmpty && finishedList.isEmpty {
                 load()
             }
         }
