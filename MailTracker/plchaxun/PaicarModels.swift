@@ -230,8 +230,9 @@ struct PaicarLoginInfo {
         PaicarLoginInfo(
             code: (d["code"] as? NSNumber)?.intValue ?? -1,
             token: (d["token"] as? String) ?? "",
-            userId: (d["user_id"] as? String) ?? "",
-            userNo: (d["user_no"] as? String) ?? ""
+            // 服务端 user_id/user_no 可能为整数（如 42），s() 兼容 Int 与空值"null"
+            userId: s(d, "user_id"),
+            userNo: s(d, "user_no")
         )
     }
 }
