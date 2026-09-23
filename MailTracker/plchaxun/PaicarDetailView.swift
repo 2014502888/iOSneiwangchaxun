@@ -280,7 +280,7 @@ struct PaicarDetailView: View {
                 if orderMap["images"] == nil, let l = d["imageList"] as? [Any] { orderMap["images"] = l }
                 order = PaicarDispatchOrder.fromJson(orderMap)
                 loading = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false
@@ -549,7 +549,7 @@ struct PaicarApplyDetailView: View {
                 let d = try await PaicarApi.applyOrderDetail(id: orderId)
                 order = PaicarApplyOrder.fromJson(d)
                 loading = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false

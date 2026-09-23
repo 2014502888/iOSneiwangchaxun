@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 远程开机（对应安卓 RemoteBootActivity）
 

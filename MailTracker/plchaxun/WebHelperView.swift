@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WebKit
 
 // MARK: - 站点配置（与安卓 WebConfig 一致）

@@ -257,7 +257,7 @@ struct PaicarDispatchListView: View {
                     .sorted { $0.statusCode < $1.statusCode }
                 hasMoreDispatch = rawDispatch.count >= 20
                 loading = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false
@@ -286,7 +286,7 @@ struct PaicarDispatchListView: View {
                 }
                 dispatches.append(contentsOf: more)
                 loadingMore = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loadingMore = false
             } catch {
                 loadingMore = false
@@ -329,7 +329,7 @@ struct PaicarDispatchListView: View {
                 }
                 loadingFinished = false
                 finishedLoadedOnce = true
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loadingFinished = false
             } catch {
                 loadingFinished = false
@@ -377,7 +377,7 @@ struct PaicarDispatchListView: View {
                     hasMoreFinished = false
                 }
                 loadingMoreFinished = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loadingMoreFinished = false
             } catch {
                 loadingMoreFinished = false

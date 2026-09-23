@@ -140,7 +140,7 @@ struct PaicarDashboardView: View {
                 apply = aa
                 dispatch = dd
                 loading = false
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false

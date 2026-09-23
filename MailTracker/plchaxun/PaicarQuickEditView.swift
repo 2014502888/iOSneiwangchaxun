@@ -292,7 +292,7 @@ struct PaicarQuickEditView: View {
                 loading = false
                 let saved = PaicarApi.loadQuickCars()
                 rows = saved.isEmpty ? defaultRows() : saved
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false

@@ -297,7 +297,7 @@ struct PaicarApplyEditView: View {
                     let o = try await PaicarApi.applyOrderDetail(id: pid)
                     fill(o)
                 }
-            } catch is PaicarError.authExpired {
+            } catch PaicarError.authExpired {
                 loading = false
             } catch {
                 loading = false
