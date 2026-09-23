@@ -2,7 +2,7 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-// 全屏返回手势类（运行时创建，避免与宿主 App 已有类冲突）
+// 全屏返回手势类
 @interface FBSPanGesture : UIPanGestureRecognizer
 @end
 @implementation FBSPanGesture
@@ -40,34 +40,31 @@
     UINavigationController *nav = [self navOf:g.view];
     if (!nav || nav.viewControllers.count < 2) return NO;
     CGPoint t = [p translationInView:g.view];
-    // 只响应向右（返回方向）的横向拖动
     if (t.x < 2) return NO;
     if (fabs(t.x) < fabs(t.y)) return NO;
     return YES;
 }
 
-// 与 ScrollView 等其他手势共存
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)g shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)o {
     return NO;
 }
 @end
 
-// 安装器
 static void FBSInstallOnNav(UINavigationController *nav) {
     @try {
         for (UIGestureRecognizer *g in nav.view.gestureRecognizers) {
-            if ([g isMemberOfClass:[FBSPanGesture class]]) return; // 已装
+            if ([g isMemberOfClass:[FBSPanGesture class]]) return;
         }
         UIGestureRecognizer *sys = nav.interactivePopGestureRecognizer;
         NSArray *targets = [sys valueForKey:@"_targets"];
-        id target = targets.firstObject;   // wrapper 本身，直接响应 handleNavigationTransition:
+        id target = targets.firstObject;   // wrapper 本身
         if (!target) return;
         FBSPanGesture *gesture = [[FBSPanGesture alloc] initWithTarget:target
                                                                action:NSSelectorFromString(@"handleNavigationTransition:")];
         gesture.delegate = [FBSDelegate shared];
         gesture.maximumNumberOfTouches = 1;
         [nav.view addGestureRecognizer:gesture];
-        sys.enabled = NO; // 全屏手势接管，避免与系统边缘手势重复
+        sys.enabled = NO;
     } @catch (NSException *e) {}
 }
 
@@ -90,12 +87,12 @@ static void FBSInstall(void) {
     });
 }
 
-%hook UIApplication
-- (void)applicationDidBecomeActive:(id)a { %orig; FBSInstall(); }
-%end
-
 %ctor {
-    // 启动后也装一次，覆盖后来 push 出来的导航
+    // 启动后延迟安装，覆盖各导航控制器
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{ FBSInstall(); });
+    // 之后每次进入前台再补装一次
+    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification
+                                                      object:nil queue:nil
+                                                  usingBlock:^(NSNotification *n){ FBSInstall(); }];
 }

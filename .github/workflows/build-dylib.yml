@@ -8,15 +8,18 @@ on:
 
 jobs:
   dylib:
-    runs-on: ubuntu-22.04
+    runs-on: macos-15
+    env:
+      THEOS: /opt/theos
     steps:
       - uses: actions/checkout@v4
       - name: Setup Theos
-        uses: apple-actions/setup-theos@v1
-        with:
-          version: 'master'
+        run: |
+          git clone --recursive https://github.com/theos/theos.git /opt/theos
+          sudo chown -R "$(id -un)" /opt/theos
+          brew install ldid
       - name: Build
-        run: cd tweak && package=1 make
+        run: cd tweak && make
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
