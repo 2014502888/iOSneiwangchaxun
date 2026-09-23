@@ -93,8 +93,8 @@ struct InteractiveSwipeBackModifier: ViewModifier {
                     // 过半（40%）或快速滑动（预测位移>35%）→ 完成返回；否则回弹取消
                     let shouldPop = offset > w * 0.4 || value.predictedEndTranslation.width > w * 0.35
                     if shouldPop {
-                        withAnimation(.easeOut(duration: 0.22)) { offset = w }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onSwipe() }
+                        // 直接交给系统返回动画：不再自己补滑出动画、不延迟，避免与系统pop动画叠加闪一下主界面
+                        onSwipe()
                     } else {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { offset = 0 }
                     }
