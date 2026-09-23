@@ -45,9 +45,9 @@ struct ExternalView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.body)
                         .foregroundColor(.blue)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                 }
             }

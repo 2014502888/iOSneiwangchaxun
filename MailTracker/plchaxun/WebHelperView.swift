@@ -55,6 +55,8 @@ enum WebPasswordStore {
 struct WebHelperWebView: UIViewRepresentable {
     let site: WebSite
     let index: Int
+    let backTick: Int
+    let isActive: Bool
     @Binding var progress: Double
     @Binding var title: String
     @Binding var canGoBack: Bool
@@ -87,11 +89,17 @@ struct WebHelperWebView: UIViewRepresentable {
         // 深浅色：背景跟随
         webView.isOpaque = false
         webView.backgroundColor = isDark ? UIColor.black : UIColor.white
+        // 网页返回上一页（顶栏按钮触发，仅当前选中站点响应）
+        if backTick != context.coordinator.lastBackTick && isActive {
+            context.coordinator.lastBackTick = backTick
+            if webView.canGoBack { webView.goBack() }
+        }
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
         var parent: WebHelperWebView
         weak var webView: WKWebView?
+        var lastBackTick = 0
         private var didAutoFill = false
         private var pendingDownloadFilename: String?
 
@@ -218,6 +226,7 @@ struct WebHelperView: View {
     @State private var progress: Double = 0
     @State private var title = "网址助手"
     @State private var canGoBack = false
+    @State private var backTick = 0
     @State private var downloadTip: String?
     @State private var showShare = false
     @State private var shareURL: URL?
@@ -249,6 +258,8 @@ struct WebHelperView: View {
                     WebHelperWebView(
                         site: WebHelperConfig.sites[i],
                         index: i,
+                        backTick: backTick,
+                        isActive: currentIndex == i,
                         progress: $progress,
                         title: $title,
                         canGoBack: $canGoBack,
@@ -309,6 +320,17 @@ struct WebHelperView: View {
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
+            // 网页返回上一页（浅色黑 / 深色白）
+            Button {
+                if canGoBack { backTick += 1 }
+            } label: {
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(fg)
+                    .frame(width: 40, height: 44)
+            }
+            .disabled(!canGoBack)
+            .opacity(canGoBack ? 1 : 0.35)
             Text(title)
                 .font(.system(size: 17, weight: .bold))
                 .lineLimit(1)
