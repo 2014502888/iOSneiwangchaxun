@@ -367,15 +367,21 @@ struct WebHelperView: View {
                         return
                     }
                     if shouldPop {
-                        withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            swipeOffset = 0
-                            swipePreview = nil
-                            if wv.canGoBack {
+                        if wv.canGoBack {
+                            // 网页后退：内容无过渡动画，保留滑出效果后 goBack
+                            withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                swipeOffset = 0
+                                swipePreview = nil
                                 wv.goBack()
-                            } else if isLeftEdge {
-                                presentationMode.wrappedValue.dismiss()
                             }
+                        } else if isLeftEdge {
+                            // 返回主界面：直接交系统pop动画，不补双动画避免闪一下
+                            swipePreview = nil
+                            presentationMode.wrappedValue.dismiss()
+                        } else {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
+                            swipePreview = nil
                         }
                     } else {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
@@ -383,7 +389,7 @@ struct WebHelperView: View {
                     }
                 }
         )
-        .onAppear { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() }
+        .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() } }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }
