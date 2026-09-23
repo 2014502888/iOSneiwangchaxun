@@ -70,6 +70,8 @@ struct InteractiveSwipeBackModifier: ViewModifier {
             }
             content
                 .offset(x: offset)
+                // 内容层补不透明背景：内网/外网页自身无背景，否则底下主界面快照会透出叠加
+                .background(Color(.systemBackground))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
