@@ -81,9 +81,11 @@ enum PaicarApi {
 
     static func post(_ service: String, params: [(String, String)]) async throws -> PaicarResult {
         let signed = signed(service: service, params: params)
-        let bodyString = signed.map { k, v in
-            "\(k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? k)=\(v.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? v)"
-        }.joined(separator: "&")
+        // 表单编码必须转义 & + =（keys 参数值含 &，若不转义会被服务端拆断成独立字段）
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&=+;/")
+        let enc = { (s: String) -> String in s.addingPercentEncoding(withAllowedCharacters: allowed) ?? s }
+        let bodyString = signed.map { "\(enc($0.key))=\(enc($0.value))" }.joined(separator: "&")
         var req = URLRequest(url: URL(string: base)!)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
