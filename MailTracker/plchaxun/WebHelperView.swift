@@ -343,45 +343,30 @@ struct WebHelperView: View {
                     let dx = value.translation.width
                     let dy = value.translation.height
                     guard abs(dy) < 80, let wv = webView(at: currentIndex) else { return }
+                    // 仅右缘左滑：网页后退（左缘右滑返回主界面已由系统全屏手势 FullScreenBack 接管）
+                    guard sx > w - 45, dx < 0 else { return }
                     let snap = (wv.navigationDelegate as? WebHelperWebView.Coordinator)?.previousSnapshot
-                    if sx < 45 && dx > 0 {
-                        swipeActive = true
-                        // 有网页历史 → 预览网页上一页；无历史 → 预览主界面（返回主界面）
-                        swipePreview = wv.canGoBack ? snap : rootSnapshot
-                        swipeOffset = min(max(0, dx), w)
-                    } else if sx > w - 45 && dx < 0 {
-                        swipeActive = true
-                        swipePreview = snap
-                        swipeOffset = min(max(0, -dx), w)
-                    }
+                    swipeActive = true
+                    swipePreview = snap
+                    swipeOffset = min(max(0, -dx), w)
                 }
                 .onEnded { value in
                     guard swipeActive else { return }
                     swipeActive = false
                     let w = UIScreen.main.bounds.width
-                    let isLeftEdge = value.startLocation.x < 45
                     let shouldPop = swipeOffset > w * 0.4 || abs(value.predictedEndTranslation.width) > w * 0.35
                     guard let wv = webView(at: currentIndex) else {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
                         swipePreview = nil
                         return
                     }
-                    if shouldPop {
-                        if wv.canGoBack {
-                            // 网页后退：内容无过渡动画，保留滑出效果后 goBack
-                            withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                swipeOffset = 0
-                                swipePreview = nil
-                                wv.goBack()
-                            }
-                        } else if isLeftEdge {
-                            // 返回主界面：直接交系统pop动画，不补双动画避免闪一下
+                    if shouldPop && wv.canGoBack {
+                        // 网页后退：内容无过渡动画，保留滑出效果后 goBack
+                        withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            swipeOffset = 0
                             swipePreview = nil
-                            presentationMode.wrappedValue.dismiss()
-                        } else {
-                            withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
-                            swipePreview = nil
+                            wv.goBack()
                         }
                     } else {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }

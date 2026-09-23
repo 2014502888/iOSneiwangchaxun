@@ -51,6 +51,7 @@ struct RootView: View {
             }
         }
         .navigationViewStyle(.stack)
+        .onAppear { FullScreenBack.install() }
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToRoot)) { _ in
             showPaicar = false
         }

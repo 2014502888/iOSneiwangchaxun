@@ -33,7 +33,7 @@ enum EdgeSwipeBack {
         }
     }
 
-    private static func findNav(_ vc: UIViewController?) -> UINavigationController? {
+    static func findNav(_ vc: UIViewController?) -> UINavigationController? {
         if let n = vc as? UINavigationController { return n }
         if let tab = vc as? UITabBarController {
             for c in tab.viewControllers ?? [] {
@@ -51,56 +51,46 @@ enum EdgeSwipeBack {
 
 struct InteractiveSwipeBackModifier: ViewModifier {
     let onSwipe: () -> Void
-    @State private var offset: CGFloat = 0
-    @State private var active = false
-    @State private var snapshot: UIImage?
+    // 全屏返回已由 FullScreenBack 统一驱动系统原生转场，这里不再自己模拟手势/快照，避免冲突
+    func body(content: Content) -> some View { content }
+}
 
-    func body(content: Content) -> some View {
-        ZStack(alignment: .leading) {
-            // 左边露出的上一页内容（快照；未取到快照时显示半透明占位）
-            if let img = snapshot {
-                Image(uiImage: img)
-                    .resizable()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-            } else {
-                Rectangle()
-                    .fill(Color.black.opacity(0.35))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            content
-                .offset(x: offset)
-                // 内容层补不透明背景：内网/外网页自身无背景，否则底下主界面快照会透出叠加
-                .background(Color(.systemBackground))
+// MARK: - 全屏边缘返回（驱动系统原生转场，效果与系统一致：跟手、露真上一页、过半才返回）
+
+final class FullScreenPanGesture: UIPanGestureRecognizer {}
+
+final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
+    static let shared = FullScreenBackDelegate()
+    func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+        guard let pan = g as? UIPanGestureRecognizer,
+              let nav = EdgeSwipeBack.findNav(g.view) else { return false }
+        // 只有导航栈多于一页才允许返回
+        guard nav.viewControllers.count > 1 else { return false }
+        let t = pan.translation(in: g.view)
+        // 只响应向右（返回方向）的横向拖动；纵向滚动不抢
+        guard t.x > 2, abs(t.x) > abs(t.y) else { return false }
+        return true
+    }
+}
+
+enum FullScreenBack {
+    static func install() {
+        DispatchQueue.main.async {
+            guard let window = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first?.windows.first,
+                  let nav = EdgeSwipeBack.findNav(window.rootViewController) else { return }
+            if nav.view.gestureRecognizers?.contains(where: { $0 is FullScreenPanGesture }) == true { return }
+            // KVC 拿到系统边缘返回手势的 target（_UINavigationInteractiveTransition），
+            // 全屏手势直接驱动它的私有 handleNavigationTransition:，复用系统原生 pop 动画
+            guard let sys = nav.interactivePopGestureRecognizer,
+                  let targets = sys.value(forKey: "_targets") as? [NSObject],
+                  let target = targets.first?.value(forKey: "_target") else { return }
+            let sel = NSSelectorFromString("handleNavigationTransition:")
+            let g = FullScreenPanGesture(target: target, action: sel)
+            g.delegate = FullScreenBackDelegate.shared
+            nav.view.addGestureRecognizer(g)
+            sys.isEnabled = false   // 全屏手势接管，避免与系统边缘手势重复
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .contentShape(Rectangle())
-        .highPriorityGesture(
-            DragGesture(minimumDistance: 25)
-                .onChanged { value in
-                    let sx = value.startLocation.x
-                    let dy = value.translation.height
-                    // 仅左缘 45pt 内向右的横向手势触发；纵向位移大于 80pt 视为滚动，不触发
-                    guard sx < 45, value.translation.width > 0, abs(dy) < 80 else { return }
-                    active = true
-                    offset = min(max(0, value.translation.width), UIScreen.main.bounds.width)
-                }
-                .onEnded { value in
-                    guard active else { return }
-                    active = false
-                    let w = UIScreen.main.bounds.width
-                    // 过半（40%）或快速滑动（预测位移>35%）→ 完成返回；否则回弹取消
-                    let shouldPop = offset > w * 0.4 || value.predictedEndTranslation.width > w * 0.35
-                    if shouldPop {
-                        // 直接交给系统返回动画：不再自己补滑出动画、不延迟，避免与系统pop动画叠加闪一下主界面
-                        onSwipe()
-                    } else {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { offset = 0 }
-                    }
-                }
-        )
-        .onAppear { snapshot = EdgeSwipeBack.snapshotOfPreviousPage() }
     }
 }
 
