@@ -282,9 +282,9 @@ struct PaicarDetailView: View {
                 loading = false
             } catch PaicarError.authExpired {
                 loading = false
-            } catch {
+            } catch let err {
                 loading = false
-                error = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
+                error = (err as? PaicarError)?.errorDescription ?? err.localizedDescription
             }
         }
     }

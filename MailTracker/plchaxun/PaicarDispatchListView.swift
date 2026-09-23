@@ -259,9 +259,9 @@ struct PaicarDispatchListView: View {
                 loading = false
             } catch PaicarError.authExpired {
                 loading = false
-            } catch {
+            } catch let err {
                 loading = false
-                error = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
+                error = (err as? PaicarError)?.errorDescription ?? err.localizedDescription
             }
         }
     }
@@ -331,9 +331,9 @@ struct PaicarDispatchListView: View {
                 finishedLoadedOnce = true
             } catch PaicarError.authExpired {
                 loadingFinished = false
-            } catch {
+            } catch let err {
                 loadingFinished = false
-                error = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
+                error = (err as? PaicarError)?.errorDescription ?? err.localizedDescription
             }
         }
     }
