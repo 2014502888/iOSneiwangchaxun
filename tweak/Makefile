@@ -1,6 +1,6 @@
 THEOS_PACKAGE_DIR_NAME = debs
-TARGET = iphone:clang:15.0:15.0
 ARCHS = arm64 arm64e
+TARGET = iphone:clang:15.0
 
 include $(THEOS)/makefiles/common.mk
 
