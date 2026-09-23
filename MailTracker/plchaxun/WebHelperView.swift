@@ -339,15 +339,16 @@ struct WebHelperView: View {
             DragGesture(minimumDistance: 25)
                 .onChanged { value in
                     let w = UIScreen.main.bounds.width
+                    let sx = value.startLocation.x
                     let dx = value.translation.width
                     let dy = value.translation.height
                     guard abs(dy) < 80, let wv = webView(at: currentIndex) else { return }
-                    // 有网页历史：全屏右滑逐页退回网页上一页；无历史则不拦截，交给系统pop回主界面
-                    guard wv.canGoBack, dx > 0 else { return }
+                    // 右缘左滑：网页逐页后退（左缘右滑返回主界面由系统全屏手势处理）
+                    guard wv.canGoBack, sx > w - 45, dx < 0 else { return }
                     let snap = (wv.navigationDelegate as? WebHelperWebView.Coordinator)?.previousSnapshot
                     swipeActive = true
                     swipePreview = snap
-                    swipeOffset = min(max(0, dx), w)
+                    swipeOffset = min(max(0, -dx), w)
                 }
                 .onEnded { value in
                     guard swipeActive else { return }

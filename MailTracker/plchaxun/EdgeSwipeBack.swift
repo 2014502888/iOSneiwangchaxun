@@ -124,7 +124,7 @@ enum FullScreenBack {
         g.delegate = FullScreenBackDelegate.shared
         g.addTarget(FBSHaptic.shared, action: #selector(FBSHaptic.track(_:)))
         nav.view.addGestureRecognizer(g)
-        sys.isEnabled = false   // 全屏手势接管，避免与系统边缘手势重复
+
     }
     private static func walk(_ vc: UIViewController?) {
         guard let vc = vc else { return }
