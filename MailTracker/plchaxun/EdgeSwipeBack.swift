@@ -59,6 +59,26 @@ struct InteractiveSwipeBackModifier: ViewModifier {
 
 final class FullScreenPanGesture: UIPanGestureRecognizer {}
 
+// 返回手势过半时的轻震动（与参考 dylib 一致，弱=light）
+final class FBSHaptic: NSObject {
+    static let shared = FBSHaptic()
+    private var hasHaptic = false
+    @objc func track(_ g: UIPanGestureRecognizer) {
+        let w = UIScreen.main.bounds.width
+        switch g.state {
+        case .began:
+            hasHaptic = false
+        case .changed:
+            let tx = g.translation(in: g.view).x
+            if !hasHaptic && tx > w * 0.5 {
+                hasHaptic = true
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        default: break
+        }
+    }
+}
+
 final class FullScreenBackDelegate: NSObject, UIGestureRecognizerDelegate {
     static let shared = FullScreenBackDelegate()
     private func nav(of view: UIView?) -> UINavigationController? {
@@ -93,6 +113,7 @@ enum FullScreenBack {
         let sel = NSSelectorFromString("handleNavigationTransition:")
         let g = FullScreenPanGesture(target: target, action: sel)
         g.delegate = FullScreenBackDelegate.shared
+        g.addTarget(FBSHaptic.shared, action: #selector(FBSHaptic.track(_:)))
         nav.view.addGestureRecognizer(g)
         sys.isEnabled = false   // 全屏手势接管，避免与系统边缘手势重复
     }
