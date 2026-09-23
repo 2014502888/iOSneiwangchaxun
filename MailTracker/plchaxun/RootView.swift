@@ -34,6 +34,12 @@ struct RootView: View {
                         entryButton("内网查询", color: yellow) { InternalView() }
                         entryButton("网址助手", color: orange) { WebHelperView() }
                         entryButton("远程开机", color: purple) { RemoteBootView() }
+
+                        // 版本号：便于确认安装的是哪个 build（排查装错版本）
+                        Text("版本 " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"))
+                            .font(.system(size: 12))
+                            .foregroundColor(fg.opacity(0.5))
+                            .padding(.top, 8)
                     }
                     .frame(minHeight: geo.size.height)
                     .frame(maxWidth: .infinity)
