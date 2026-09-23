@@ -63,33 +63,57 @@ enum PaicarApi {
         return r
     }
 
-    /// 网络请求统一入口（回调版 URLSession + 任务级硬超时）。
-    /// 为什么不用 async 版 data(for:)：iOS 18 上 URLSession 请求可能永久挂起且
-    /// timeoutInterval 不生效，async 版挂起后调用 cancel 也无法中断，导致无限转圈；
-    /// 回调版 dataTask 在 task.cancel() 时必定触发 completion(URLError.cancelled)，
-    /// 超时后强制 cancel，任何请求 15 秒内必出结果（数据或错误），不再无限转圈。
+    /// 网络请求统一入口（NSURLConnection 同步请求 + 任务级硬超时）。
+    /// 为什么弃用 URLSession：iOS 18 上 URLSession 请求可能永久挂起且 timeoutInterval、
+    /// cancel、invalidateAndCancel 均不触发 completion（回调版与 async 版都存在），表现为无限转圈；
+    /// NSURLConnection 同步请求是阻塞式老 API，timeoutInterval 是硬性约束，15 秒内必定返回
+    /// （数据 / 超时 / 错误），彻底绕开 URLSession 的挂起问题，不再无限转圈。
     private static func perform(_ req: URLRequest, timeout: TimeInterval = 15, service: String) async throws -> Data {
-        let session = makeSession(timeout: timeout)
+        var r = req
+        r.timeoutInterval = timeout
         return try await withCheckedThrowingContinuation { cont in
-            let task = session.dataTask(with: req) { data, _, err in
-                session.invalidateAndCancel()
-                if let urlErr = err as? URLError, urlErr.code == .cancelled {
-                    // 由下方超时强制取消触发：请求真实挂起，错误带上接口名便于定位
-                    cont.resume(throwing: PaicarError.api("请求超时(\(service))，请检查网络后重试"))
-                } else if let err = err {
-                    cont.resume(throwing: err)
-                } else if let data = data {
-                    cont.resume(returning: data)
-                } else {
-                    cont.resume(throwing: PaicarError.api("空响应(\(service))"))
+            let box = OnceBox()
+            DispatchQueue.global().async {
+                var response: URLResponse?
+                do {
+                    let data = try NSURLConnection.sendSynchronousRequest(r, returning: &response)
+                    box.once { cont.resume(returning: data) }
+                } catch let err {
+                    box.once { cont.resume(throwing: PaicarError.api("网络错误(\(service))：\(describe(err))")) }
                 }
             }
-            task.resume()
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                task.cancel()   // 请求已完成时 cancel 无害；请求挂起时强制中断
-                session.invalidateAndCancel()   // 双保险：强制终止整个会话，保证 completion 必定触发
+            // 兜底：正常时同步请求已被 timeoutInterval 截断；极端情况仍无返回时强制抛错
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout + 3) {
+                box.once {
+                    cont.resume(throwing: PaicarError.api("请求超时(\(service))：请求已发出但无响应，token\(token.isEmpty ? "为空" : "正常")、user_id\(userId.isEmpty ? "为空" : userId)。请检查网络后重试"))
+                }
             }
         }
+    }
+
+    /// 防重复 resume 的闭包盒（URLSession/同步请求与兜底定时器可能竞争）
+    private final class OnceBox {
+        private let lock = NSLock()
+        private var done = false
+        func once(_ op: () -> Void) {
+            lock.lock()
+            if !done { done = true; op() }
+            lock.unlock()
+        }
+    }
+
+    /// 网络错误转中文描述（便于界面直接展示可读信息）
+    private static func describe(_ err: Error) -> String {
+        if let u = err as? URLError {
+            switch u.code {
+            case .timedOut: return "请求超时，请检查网络后重试"
+            case .notConnectedToInternet: return "网络不可用，请检查连接"
+            case .cannotConnectToHost, .cannotFindHost: return "无法连接服务器，请检查网络"
+            case .dnsLookupFailed: return "域名解析失败"
+            default: return u.localizedDescription
+            }
+        }
+        return err.localizedDescription
     }
 
     static func get(_ service: String, params: [(String, String)]) async throws -> PaicarResult {

@@ -242,6 +242,12 @@ struct PaicarDispatchListView: View {
     private func load() {
         loading = true
         error = ""
+        // UI 级硬超时兜底：即使网络层极端异常，16 秒内必结束转圈并显示错误，不再无限转圈
+        DispatchQueue.main.asyncAfter(deadline: .now() + 16) { [weak self] in
+            guard let self = self, self.loading else { return }
+            self.loading = false
+            self.error = "加载超时（网络无响应），请检查网络后重试"
+        }
         Task {
             do {
                 let p = try await PaicarProfileHolder.load()
