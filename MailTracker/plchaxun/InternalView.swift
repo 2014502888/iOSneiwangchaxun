@@ -289,6 +289,7 @@ struct InternalView: View {
     @State private var selectedResult: InternalMailResult?
     // 🆕 会话失效弹窗
     @State private var showSessionExpiredAlert = false
+    @State private var showNoHarAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -354,6 +355,9 @@ struct InternalView: View {
         .alert("登录会话已失效", isPresented: $showSessionExpiredAlert) {
             Button("知道了", role: .cancel) {}
         }
+        .alert("请先导入 HAR 抓包文件", isPresented: $showNoHarAlert) {
+            Button("知道了", role: .cancel) {}
+        }
     }
 
     private var inputSection: some View {
@@ -416,6 +420,10 @@ struct InternalView: View {
 
                 Button {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    if !InternalHarConfig.shared.isConfigured {
+                        showNoHarAlert = true
+                        return
+                    }
                     engine.start()
                 } label: {
                     HStack(spacing: 8) {
@@ -428,7 +436,7 @@ struct InternalView: View {
                     .background(engine.isQuerying ? Color.gray.opacity(0.3) : (engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.blue))
                     .foregroundColor(engine.isQuerying ? .gray : .white).cornerRadius(10)
                 }
-                .disabled(engine.isQuerying || engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !InternalHarConfig.shared.isConfigured)
+                .disabled(engine.isQuerying || engine.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 if engine.isQuerying {
                     Button { engine.cancel() } label: {
