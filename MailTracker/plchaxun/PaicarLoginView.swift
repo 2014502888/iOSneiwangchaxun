@@ -1,0 +1,372 @@
+import SwiftUI
+
+// MARK: - 派车模块入口（对应 PaicarLoginActivity + PaicarHomeActivity 路由）
+
+enum PaicarNavTarget: Equatable {
+    case none
+    case newApply
+    case quickEdit
+    case editApply
+    case arrange
+    case finish
+}
+
+struct PaicarModuleView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.presentationMode) private var presentationMode
+    @State private var navTarget = PaicarNavTarget.none
+    @State private var navPostId = ""
+    @State private var navOrderId = ""
+    @State private var navMode = ""
+    @State private var loggedIn = false
+
+    private var isDark: Bool { colorScheme == .dark }
+
+    var body: some View {
+        Group {
+            if loggedIn {
+                PaicarHomeView()
+            } else {
+                PaicarLoginView()
+            }
+        }
+        .background(
+            Group {
+                NavigationLink(destination: PaicarApplyEditView(), isActive: isActive(.newApply)) { EmptyView() }
+                NavigationLink(destination: PaicarQuickEditView(), isActive: isActive(.quickEdit)) { EmptyView() }
+                NavigationLink(destination: PaicarApplyEditView(postId: navPostId), isActive: isActive(.editApply)) { EmptyView() }
+                NavigationLink(destination: PaicarArrangeView(orderId: navOrderId), isActive: isActive(.arrange)) { EmptyView() }
+                NavigationLink(destination: PaicarFinishView(orderId: navOrderId, mode: navMode), isActive: isActive(.finish)) { EmptyView() }
+            }
+        )
+        .onAppear {
+            loggedIn = PaicarSession.savedUserNo.isEmpty == false
+                && PaicarSession.savedUserPwd.isEmpty == false
+                && PaicarApi.token.isEmpty == false
+            PaicarApi.onAuthExpired = {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .paicarAuthExpired, object: nil)
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarLoginOK)) { _ in
+            loggedIn = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarForceLogin)) { _ in
+            loggedIn = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarOpenNewApply)) { _ in
+            navTarget = .newApply
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarOpenQuickEdit)) { _ in
+            navTarget = .quickEdit
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarOpenEditApply)) { note in
+            navPostId = (note.userInfo?["orderId"] as? String) ?? ""
+            navTarget = .editApply
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarOpenArrange)) { note in
+            navOrderId = (note.userInfo?["orderId"] as? String) ?? ""
+            navTarget = .arrange
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarOpenFinish)) { note in
+            navOrderId = (note.userInfo?["orderId"] as? String) ?? ""
+            navMode = (note.userInfo?["mode"] as? String) ?? ""
+            navTarget = .finish
+        }
+    }
+
+    private func isActive(_ t: PaicarNavTarget) -> Binding<Bool> {
+        Binding(
+            get: { navTarget == t },
+            set: { if !$0 { navTarget = .none } }
+        )
+    }
+}
+
+extension Notification.Name {
+    static let paicarAuthExpired = Notification.Name("paicarAuthExpired")
+    static let paicarLoginOK = Notification.Name("paicarLoginOK")
+}
+
+// MARK: - 登录页（对应 PaicarLoginActivity）
+
+struct PaicarLoginView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.presentationMode) private var presentationMode
+    @State private var userNo = ""
+    @State private var pwd = ""
+    @State private var loading = false
+    @State private var toast: String?
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var fg: Color { isDark ? .white : .black }
+    private var pageBg: Color { isDark ? Color(red: 0.07, green: 0.07, blue: 0.07) : .white }
+    private var inputBg: Color { isDark ? Color(red: 0.17, green: 0.17, blue: 0.17) : .white }
+    private var inputBorder: Color { isDark ? Color(white: 0.33) : Color(white: 0.8) }
+    private var hintColor: Color { isDark ? Color(white: 0.67) : Color(white: 0.53) }
+    private var blue: Color { Color(red: 0.08, green: 0.28, blue: 0.75) }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 顶栏：返回键 + 居中"寄递派车"（扣除占位）
+            HStack(spacing: 0) {
+                Button {
+                    presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                }
+                Text("寄递派车")
+                    .font(.system(size: 18, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                Color.clear.frame(width: 40, height: 44)
+            }
+            .foregroundColor(fg)
+            .background(pageBg)
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    Text("🚚").font(.system(size: 72)).padding(.top, 40)
+                    Text("寄递车辆调度系统")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(fg)
+                        .padding(.top, 8)
+                        .padding(.bottom, 32)
+
+                    TextField("登录账号", text: $userNo)
+                        .keyboardType(.numberPad)
+                        .font(.system(size: 15))
+                        .foregroundColor(fg)
+                        .accentColor(fg)
+                        .padding(.horizontal, 12)
+                        .frame(height: 48)
+                        .background(inputBg)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(inputBorder, lineWidth: 1))
+                        .padding(.horizontal, 24)
+
+                    SecureField("密码", text: $pwd)
+                        .font(.system(size: 15))
+                        .foregroundColor(fg)
+                        .accentColor(fg)
+                        .padding(.horizontal, 12)
+                        .frame(height: 48)
+                        .background(inputBg)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(inputBorder, lineWidth: 1))
+                        .padding(.horizontal, 24)
+                        .padding(.top, 16)
+
+                    if PaicarSession.savedUserNo.isEmpty == false && PaicarSession.savedUserPwd.isEmpty == false {
+                        Text("✓ 已记住账号和密码，直接点登录")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(red: 0.3, green: 0.68, blue: 0.31))
+                            .padding(.top, 12)
+                    }
+
+                    Button {
+                        doLogin()
+                    } label: {
+                        Text(loading ? "登录中…" : "登录")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(blue)
+                            .cornerRadius(10)
+                    }
+                    .disabled(loading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 28)
+
+                    if loading {
+                        ProgressView().padding(.top, 12)
+                    }
+                }
+                .padding(.bottom, 40)
+            }
+            .background(pageBg)
+        }
+        .background(pageBg)
+        .navigationBarHidden(true)
+        .overlay(
+            Group {
+                if let msg = toast {
+                    PaicarToast(text: msg, dark: isDark)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+                                self.toast = nil
+                            }
+                        }
+                }
+            }
+        )
+        .onAppear {
+            let saved = PaicarSession.savedUserNo
+            if !saved.isEmpty { userNo = saved }
+            let savedPwd = PaicarSession.savedUserPwd
+            if !savedPwd.isEmpty { pwd = savedPwd }
+        }
+    }
+
+    private func doLogin() {
+        if loading { return }
+        let u = userNo.trimmingCharacters(in: .whitespacesAndNewlines)
+        if u.count < 6 { toast = "请填写登录账号"; return }
+        if pwd.count < 6 { toast = "密码最短为 6 个字符"; return }
+        loading = true
+        Task {
+            do {
+                let info = try await PaicarApi.login(userNo: u, plainPassword: pwd)
+                PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
+                loading = false
+                NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
+            } catch {
+                loading = false
+                toast = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
+            }
+        }
+    }
+}
+
+// MARK: - 主界面 3 Tab（对应 PaicarHomeActivity）
+
+struct PaicarHomeView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var tab = 0
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var fg: Color { isDark ? .white : .black }
+    private var pageBg: Color { isDark ? Color(red: 0.07, green: 0.07, blue: 0.07) : .white }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 顶栏：返回键 + 居中标题（随 tab 变）+ 右侧占位（"＋"由列表页持有）
+            HStack(spacing: 0) {
+                Button {
+                    // 返回根（退出派车模块）
+                    NotificationCenter.default.post(name: .paicarBackToRoot, object: nil)
+                } label: {
+                    Text("←").font(.system(size: 22)).frame(width: 40, height: 44)
+                }
+                Text(tab == 0 ? "派车单" : (tab == 1 ? "看板" : "我的"))
+                    .font(.system(size: 18, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                Color.clear.frame(width: 40, height: 44)
+            }
+            .foregroundColor(fg)
+            .background(pageBg)
+
+            Group {
+                if tab == 0 {
+                    PaicarDispatchListView()
+                } else if tab == 1 {
+                    PaicarDashboardView()
+                } else {
+                    PaicarMineView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // 底部 3 tab（对应 BottomNavigationView）
+            HStack(spacing: 0) {
+                tabButton("派车单", icon: "shippingbox", index: 0)
+                tabButton("看板", icon: "chart.bar.fill", index: 1)
+                tabButton("我的", icon: "person.fill", index: 2)
+            }
+            .frame(height: 52)
+            .background(pageBg)
+        }
+        .background(pageBg)
+        .navigationBarHidden(true)
+    }
+
+    private func tabButton(_ title: String, icon: String, index: Int) -> some View {
+        Button {
+            tab = index
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                Text(title)
+                    .font(.system(size: 12))
+            }
+            .foregroundColor(tab == index ? Color(red: 0.08, green: 0.28, blue: 0.75) : (isDark ? Color(white: 0.6) : Color(white: 0.45)))
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+extension Notification.Name {
+    static let paicarBackToRoot = Notification.Name("paicarBackToRoot")
+    static let paicarOpenNewApply = Notification.Name("paicarOpenNewApply")
+    static let paicarOpenQuickEdit = Notification.Name("paicarOpenQuickEdit")
+    static let paicarOpenEditApply = Notification.Name("paicarOpenEditApply")
+    static let paicarOpenArrange = Notification.Name("paicarOpenArrange")
+    static let paicarOpenFinish = Notification.Name("paicarOpenFinish")
+}
+
+// MARK: - 通用 Toast（无图标）
+
+struct PaicarToast: View {
+    let text: String
+    let dark: Bool
+    var body: some View {
+        Text(text)
+            .font(.system(size: 14))
+            .foregroundColor(dark ? .white : .black)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(dark ? Color(red: 0.086, green: 0.086, blue: 0.086) : Color(red: 0.95, green: 0.95, blue: 0.95))
+            .cornerRadius(10)
+    }
+}
+
+// MARK: - 被顶号弹窗（对应 PaicarApp.showAuthExpiredDialog）
+
+struct PaicarAuthExpiredHandler: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var show = false
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .paicarAuthExpired)) { _ in
+                show = true
+            }
+            .alert("账号已在别处登入", isPresented: $show) {
+                Button("取消", role: .cancel) {
+                    PaicarSession.clear()
+                    PaicarProfileHolder.profile = nil
+                    NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+                }
+                Button("重新登录") {
+                    let u = PaicarSession.savedUserNo
+                    let p = PaicarSession.savedUserPwd
+                    if !u.isEmpty && !p.isEmpty {
+                        Task {
+                            do {
+                                let info = try await PaicarApi.login(userNo: u, plainPassword: p)
+                                PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                            } catch {
+                                PaicarSession.clear()
+                                NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+                            }
+                        }
+                    } else {
+                        PaicarSession.clear()
+                        NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+                    }
+                }
+            } message: {
+                Text("是否重新登录？")
+            }
+    }
+}
+
+extension Notification.Name {
+    static let paicarForceLogin = Notification.Name("paicarForceLogin")
+}
+
+extension View {
+    func paicarAuthGuard() -> some View {
+        modifier(PaicarAuthExpiredHandler())
+    }
+}
