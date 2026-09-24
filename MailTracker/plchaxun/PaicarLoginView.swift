@@ -19,6 +19,7 @@ struct PaicarModuleView: View {
     @State private var navOrderId = ""
     @State private var navMode = ""
     @State private var loggedIn = false
+    @State private var autoLogging = false
 
     private var isDark: Bool { colorScheme == .dark }
 
@@ -26,6 +27,11 @@ struct PaicarModuleView: View {
         Group {
             if loggedIn {
                 PaicarHomeView()
+            } else if autoLogging {
+                VStack {
+                    ProgressView()
+                    Text("正在自动登录…").padding(.top, 8)
+                }
             } else {
                 PaicarLoginView()
             }
@@ -47,6 +53,7 @@ struct PaicarModuleView: View {
             PaicarSession.load()
             if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
                 loggedIn = false
+                autoLogging = true
                 autoLogin()
             } else {
                 loggedIn = false
@@ -99,8 +106,10 @@ struct PaicarModuleView: View {
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
                 PaicarProfileHolder.profile = nil
                 PaicarApi.justLoggedOut = false
+                autoLogging = false
                 loggedIn = true
             } catch {
+                autoLogging = false
                 loggedIn = false
             }
         }
