@@ -69,13 +69,13 @@ final class FBSHaptic: NSObject {
         switch g.state {
         case .began:
             hasHaptic = false
-            generator = UIImpactFeedbackGenerator(style: .light)
+            generator = UIImpactFeedbackGenerator(style: .medium)
             generator?.prepare()
         case .changed:
             let tx = g.translation(in: g.view).x
             if !hasHaptic && tx > w * 0.35 {
                 hasHaptic = true
-                generator?.impactOccurred(intensity: 0.5)
+                generator?.impactOccurred(intensity: 1.0)
             }
         case .ended, .cancelled, .failed:
             generator = nil
