@@ -430,6 +430,10 @@ struct PaicarAuthExpiredHandler: ViewModifier {
     }
 }
 
+class PaicarAuthDialogState {
+    static var isShowing = false
+}
+
 extension Notification.Name {
     static let paicarForceLogin = Notification.Name("paicarForceLogin")
     static let paicarReloadAfterLogin = Notification.Name("paicarReloadAfterLogin")
