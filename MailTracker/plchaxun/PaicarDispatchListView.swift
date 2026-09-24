@@ -450,11 +450,11 @@ struct PaicarDispatchListView: View {
                 statusTag((o.statusName.isEmpty ? "待派车" : o.statusName), PaicarStyle.statusColor(o.statusCode))
                 Text(o.orderNumber).font(.system(size: 15, weight: .bold)).foregroundColor(.white)
                 Text("客户 \(o.customerName)").font(.system(size: 13)).foregroundColor(.white)
-                Text(PaicarStyle.routeLine(o.routeName.isEmpty ? o.routeShortName : o.routeName, "")).font(.system(size: 13)).foregroundColor(.white)
+                Text(PaicarStyle.routeLine(o.routeName.isEmpty ? o.routeShortName : o.routeName, o.liaisonName)).font(.system(size: 13)).foregroundColor(.white)
                 Text("\(o.number)件 · \(o.carSpecs) · \(o.arrivalTime)")
                     .font(.system(size: 12)).foregroundColor(Color(white: 0.95))
-                if !o.liaisonName.isEmpty {
-                    Text("联系人 \(o.liaisonName) · 登记 \(o.createName)")
+                if !o.createTime.isEmpty {
+                    Text("\(o.createTime) 登记 \(o.createName)")
                         .font(.system(size: 12)).foregroundColor(Color(white: 0.95))
                 }
             }
@@ -608,14 +608,21 @@ struct PaicarDispatchListView: View {
     private func doQuickRecall(ids: [String]) {
         Task {
             var fail = 0
-            var failMsgs: [String] = []
+            var authFailed = false
             for id in ids {
                 do {
                     try await PaicarApi.quickRecall(id: id)
+                } catch PaicarError.authExpired {
+                    authFailed = true
+                    break
                 } catch {
                     fail += 1
-                    failMsgs.append("id=\(id): \(error.localizedDescription)")
                 }
+            }
+            if authFailed {
+                toastMsg = "登录已失效，请重新登录"
+                load()
+                return
             }
             PaicarApi.saveQuickIds([])
             if fail == 0 {

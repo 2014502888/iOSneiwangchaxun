@@ -379,7 +379,11 @@ struct PaicarApplyDetailView: View {
         let c = o.statusCode
         return c != "002" && c != "000" && c != "003" && c != "004" && c != "999" && isCreator
     }
-    private var canDelete: Bool { order?.statusCode == "000" && isCreator }
+    private var canDelete: Bool {
+        guard let o = order else { return false }
+        return (o.statusCode == "000" || o.statusCode.isEmpty ||
+                (o.statusCode != "001" && o.statusCode != "003" && o.statusCode != "004" && o.statusCode != "999")) && isCreator
+    }
 
     var body: some View {
         VStack(spacing: 0) {
