@@ -251,6 +251,20 @@ struct PaicarLoginView: View {
 struct PaicarHomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var tab = 0
+    // 右缘左滑：已在 HomeView tab 上时切回「全部」列表；
+    // 有 push 子页面时由系统全屏手势(FullScreenBack)自动 pop，不在此处理
+    private var rightEdgeBackGesture: some Gesture {
+        DragGesture(minimumDistance: 30)
+            .onEnded { value in
+                let w = UIScreen.main.bounds.width
+                let sx = value.startLocation.x
+                let dx = value.translation.width
+                let dy = value.translation.height
+                guard abs(dy) < 80, sx > w - 45, dx < -60 else { return }
+                if tab != 0 { tab = 0 }
+                NotificationCenter.default.post(name: .paicarBackToAllList, object: nil)
+            }
+    }
 
     private var isDark: Bool { colorScheme == .dark }
     private var fg: Color { isDark ? .white : .black }
@@ -296,6 +310,7 @@ struct PaicarHomeView: View {
         }
         .background(pageBg)
         .navigationBarHidden(true)
+        .highPriorityGesture(rightEdgeBackGesture)
     }
 
     private func tabButton(_ title: String, icon: String, index: Int) -> some View {
@@ -316,6 +331,7 @@ struct PaicarHomeView: View {
 
 extension Notification.Name {
     static let paicarBackToRoot = Notification.Name("paicarBackToRoot")
+    static let paicarBackToAllList = Notification.Name("paicarBackToAllList")
     static let paicarOpenNewApply = Notification.Name("paicarOpenNewApply")
     static let paicarOpenQuickEdit = Notification.Name("paicarOpenQuickEdit")
     static let paicarOpenEditApply = Notification.Name("paicarOpenEditApply")

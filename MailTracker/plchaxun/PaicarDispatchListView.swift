@@ -212,6 +212,10 @@ struct PaicarDispatchListView: View {
                 load()
             }
         }
+        // 右缘左滑返回：从已结单子tab切回全部
+        .onReceive(NotificationCenter.default.publisher(for: .paicarBackToAllList)) { _ in
+            if showFinished { showFinished = false }
+        }
     }
 
     private var renderedItems: [PaicarListItem] {
