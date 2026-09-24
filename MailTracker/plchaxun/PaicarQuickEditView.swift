@@ -254,6 +254,9 @@ struct PaicarQuickEditView: View {
             }
         case "spec":
             rows[i]["carSpecs"] = name
+            if name.contains("5.3") { rows[i]["number"] = "1000" }
+            else if name.contains("7.6") { rows[i]["number"] = "2500" }
+            else if name.contains("9.6") { rows[i]["number"] = "3000" }
         case "liaison":
             rows[i]["liaisonId"] = id
             rows[i]["liaisonName"] = name
