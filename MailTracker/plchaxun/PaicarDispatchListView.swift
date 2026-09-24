@@ -82,6 +82,8 @@ struct PaicarDispatchListView: View {
     @State private var finishedLoadedOnce = false
     @State private var finishedMoreCooldown = false
     @State private var finishedCursor = ""   // 当前已显示到哪一天（yyyy-MM-dd）
+    @State private var pushApplyId: String?
+    @State private var pushDispatchId: String?
     @State private var didInitialLoad = false   // 首次进入必加载（修复 onAppear 守卫 !loading 把首次加载挡住导致永远转圈）
 
     // UI
@@ -148,15 +150,11 @@ struct PaicarDispatchListView: View {
                             ForEach(renderedItems, id: \.self) { item in
                                 switch item {
                                 case .apply(let o):
-                                    NavigationLink(destination: PaicarApplyDetailView(orderId: o.id).paicarAuthGuard(), label: {
-                                        applyCard(o)
-                                    })
-                                    .buttonStyle(.plain)
+                                    Button { pushApplyId = o.id } label: { applyCard(o) }
+                                        .buttonStyle(.plain)
                                 case .dispatch(let o):
-                                    NavigationLink(destination: PaicarDetailView(orderId: o.id).paicarAuthGuard(), label: {
-                                        dispatchCard(o)
-                                    })
-                                    .buttonStyle(.plain)
+                                    Button { pushDispatchId = o.id } label: { dispatchCard(o) }
+                                        .buttonStyle(.plain)
                                 case .hint(let isLast):
                                     moreHint(isLast: isLast)
                                 }
@@ -184,6 +182,21 @@ struct PaicarDispatchListView: View {
             }
         }
         .background(pageBg)
+        .background(
+            // 隐藏编程式跳转
+            ZStack {
+                NavigationLink(
+                    destination: PaicarApplyDetailView(orderId: pushApplyId ?? "").paicarAuthGuard(),
+                    isActive: Binding(get: { pushApplyId != nil }, set: { if !$0 { pushApplyId = nil } })
+                ) { EmptyView() }
+                NavigationLink(
+                    destination: PaicarDetailView(orderId: pushDispatchId ?? "").paicarAuthGuard(),
+                    isActive: Binding(get: { pushDispatchId != nil }, set: { if !$0 { pushDispatchId = nil } })
+                ) { EmptyView() }
+            }
+            .frame(width: 0, height: 0)
+            .hidden()
+        )
         .overlay(
             Group {
                 if let msg = toastMsg {
