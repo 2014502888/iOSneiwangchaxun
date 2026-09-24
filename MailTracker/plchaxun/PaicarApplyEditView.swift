@@ -90,7 +90,7 @@ struct PaicarApplyEditView: View {
                             HStack {
                                 Text(selectedCustomers.isEmpty ? "请选择客户 ▼" : "已选 \(selectedCustomers.count) 个客户 ▼")
                                     .font(.system(size: 14))
-                                    .foregroundColor(selectedCustomers.isEmpty ? hintColor : fg)
+                                    .foregroundColor(selectedCustomers.isEmpty ? Color(white: 0.45) : fg)
                                 Spacer()
                             }
                             .padding(12)
