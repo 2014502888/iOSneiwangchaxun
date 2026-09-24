@@ -243,9 +243,12 @@ struct PaicarMineView: View {
 
     private func load() {
         Task {
+            // 我的页面只是展示资料,profile请求即使410也不弹顶号框,避免刚登录就误弹
+            PaicarApi.silentAuthExpired = true
             do {
                 profile = try await PaicarProfileHolder.load()
             } catch { /* 静默 */ }
+            PaicarApi.silentAuthExpired = false
         }
     }
 
