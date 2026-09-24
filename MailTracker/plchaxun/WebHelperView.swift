@@ -347,7 +347,7 @@ struct WebHelperView: View {
                 }
         )
         .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() } }
-        .onChange(of: canGoBack) { FullScreenBack.blockPop = $0 }
+        // 左缘右滑总是返回主菜单，不再因网页历史拦截
         .onDisappear { FullScreenBack.blockPop = false }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
