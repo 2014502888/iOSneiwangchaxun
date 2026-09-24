@@ -178,10 +178,14 @@ enum PaicarApi {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
         let data = try await perform(req, timeout: 60, service: "App.Upload_uploadImage.go")
-        let body = String(data: data, encoding: .utf8) ?? ""
-        _ = try parseBody(body, service: "App.Upload_uploadImage.go")
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw PaicarError.api("上传失败")
+        }
+        // 手动检查登录失效:上传接口返回格式可能不同,只检查410
+        let ret = (obj["ret"] as? NSNumber)?.intValue ?? 200
+        if ret == 410 {
+            if !silentAuthExpired { onAuthExpired?() }
+            throw PaicarError.authExpired
         }
         return obj
     }
