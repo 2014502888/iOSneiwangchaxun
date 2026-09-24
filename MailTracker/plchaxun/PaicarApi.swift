@@ -372,15 +372,7 @@ enum PaicarApi {
     // MARK: 快捷申请配置（UserDefaults 对应 SharedPreferences）
 
     static func defaultQuickCars() -> [[String: String]] {
-        [
-            ["customerId": "44", "customerName": "柒牌及卡尔美(品牌客户-罗山)", "number": "1000", "liaisonId": "78", "routeId": "62", "carSpecs": "5.3 米", "hour": "20:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "216", "customerName": "福建省晋江市康健食品有限公司", "number": "1000", "liaisonId": "78", "routeId": "35", "carSpecs": "5.3 米", "hour": "16:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "230", "customerName": "陈琳莉（国内业务合同）", "number": "1000", "liaisonId": "78", "routeId": "33", "carSpecs": "5.3 米", "hour": "17:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "253", "customerName": "泉州初觅食刻品牌管理有限公司", "number": "3000", "liaisonId": "78", "routeId": "31", "carSpecs": "9.6 米", "hour": "19:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "45", "customerName": "福建安踏物流(品牌客户-基地)", "number": "1000", "liaisonId": "222", "routeId": "59", "carSpecs": "5.3 米", "hour": "10:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "45", "customerName": "福建安踏物流(品牌客户-基地)", "number": "1000", "liaisonId": "222", "routeId": "64", "carSpecs": "5.3 米", "hour": "18:00", "shipment": "1", "enabled": "1"],
-            ["customerId": "45", "customerName": "福建安踏物流(品牌客户-基地)", "number": "1000", "liaisonId": "222", "routeId": "101", "carSpecs": "5.3 米", "hour": "23:00", "shipment": "1", "enabled": "1"],
-        ]
+        []
     }
 
     private static let quickCarsKey = "paicar_quick_cars"

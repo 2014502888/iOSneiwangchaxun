@@ -287,17 +287,7 @@ struct PaicarQuickEditView: View {
     }
 
     private func defaultRows() -> [[String: String]] {
-        let names = ["泉州品牌安踏", "陈埭品牌安踏", "泉州晋江吾悦安踏", "陈埭吾悦安踏", "泉州安踏"]
-        var out: [[String: String]] = []
-        for name in names {
-            out.append([
-                "enabled": "1",
-                "customerName": name, "number": "", "carSpecs": "9.6",
-                "hour": "", "liaisonId": "", "liaisonName": "",
-                "routeId": "", "routeName": "", "shipment": "0",
-            ])
-        }
-        return out
+        return []
     }
 
     private func save() {

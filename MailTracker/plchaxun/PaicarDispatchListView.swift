@@ -566,7 +566,7 @@ struct PaicarDispatchListView: View {
         Task {
             let cars = PaicarApi.loadQuickCars().filter { $0["enabled"] == "1" }
             if cars.isEmpty {
-                toastMsg = "快捷配置为空，请先点「申请配置」"
+                toastMsg = "请先去配置界面填写相关信息"
                 return
             }
             runQuickApply(cars: cars)
