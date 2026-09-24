@@ -14,10 +14,11 @@ jobs:
       - name: Build dylib
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          echo "SDK: $SDK"
           clang -arch arm64 \
                 -isysroot "$SDK" \
                 -dynamiclib -fobjc-arc \
+                -framework UIKit \
+                -framework Foundation \
                 -install_name @rpath/FullScreenBackTweak.dylib \
                 -o tweak/FullScreenBackTweak.dylib \
                 tweak/FullScreenBackTweak.m
