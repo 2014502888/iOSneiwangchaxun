@@ -283,7 +283,20 @@ struct PaicarHomeView: View {
                 Text(tab == 0 ? "派车单" : (tab == 1 ? "看板" : "我的"))
                     .font(.system(size: 18, weight: .bold))
                     .frame(maxWidth: .infinity)
-                Color.clear.frame(width: 40, height: 44)
+                // 右上角 + 按钮：仅派车单tab显示，弹出派车申请/一键申请/一键撤回/申请配置
+                if tab == 0 {
+                    Button {
+                        NotificationCenter.default.post(name: .paicarShowMenu, object: nil)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .frame(width: 40, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                } else {
+                    Color.clear.frame(width: 40, height: 44)
+                }
             }
             .foregroundColor(fg)
             .background(pageBg)
@@ -332,6 +345,7 @@ struct PaicarHomeView: View {
 extension Notification.Name {
     static let paicarBackToRoot = Notification.Name("paicarBackToRoot")
     static let paicarBackToAllList = Notification.Name("paicarBackToAllList")
+    static let paicarShowMenu = Notification.Name("paicarShowMenu")
     static let paicarOpenNewApply = Notification.Name("paicarOpenNewApply")
     static let paicarOpenQuickEdit = Notification.Name("paicarOpenQuickEdit")
     static let paicarOpenEditApply = Notification.Name("paicarOpenEditApply")

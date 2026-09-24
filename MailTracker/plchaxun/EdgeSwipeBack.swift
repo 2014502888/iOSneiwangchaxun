@@ -51,8 +51,21 @@ enum EdgeSwipeBack {
 
 struct InteractiveSwipeBackModifier: ViewModifier {
     let onSwipe: () -> Void
-    // 全屏返回已由 FullScreenBack 统一驱动系统原生转场，这里不再自己模拟手势/快照，避免冲突
-    func body(content: Content) -> some View { content }
+    // 全屏返回已由 FullScreenBack 统一驱动系统原生转场(左缘右滑跟手pop)
+    // 这里补一个右缘左滑手势：屏幕右边沿45px内、左滑>60pt，触发返回(与系统pop等效)
+    func body(content: Content) -> some View {
+        content.highPriorityGesture(
+            DragGesture(minimumDistance: 30)
+                .onEnded { value in
+                    let w = UIScreen.main.bounds.width
+                    let sx = value.startLocation.x
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    guard abs(dy) < 80, sx > w - 45, dx < -60 else { return }
+                    onSwipe()
+                }
+        )
+    }
 }
 
 // MARK: - 全屏边缘返回（驱动系统原生转场，效果与系统一致：跟手、露真上一页、过半才返回）

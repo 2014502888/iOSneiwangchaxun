@@ -216,6 +216,10 @@ struct PaicarDispatchListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToAllList)) { _ in
             if showFinished { showFinished = false }
         }
+        // 顶栏 + 按钮：弹出操作菜单
+        .onReceive(NotificationCenter.default.publisher(for: .paicarShowMenu)) { _ in
+            showMenu = true
+        }
     }
 
     private var renderedItems: [PaicarListItem] {
