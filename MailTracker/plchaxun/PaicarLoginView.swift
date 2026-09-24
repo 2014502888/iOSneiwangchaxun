@@ -407,6 +407,7 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                             do {
                                 let info = try await PaicarApi.login(userNo: u, plainPassword: p)
                                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                                show = false
                             } catch {
                                 PaicarSession.clear()
                                 NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
