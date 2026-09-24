@@ -79,7 +79,12 @@ struct WebHelperWebView: UIViewRepresentable {
             } else {
                 css = "body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
             }
-            let js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);var s=document.createElement('style');s.textContent='\(css)';(document.head||document.documentElement).appendChild(s);"
+            let js: String
+            if site.name == "爱纯净" {
+                js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);document.documentElement.style.background='#000';var s=document.createElement('style');s.textContent='html,body{background:#000!important;}';(document.head||document.documentElement).appendChild(s);"
+            } else {
+                js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);document.documentElement.style.background='#000';document.documentElement.style.filter='invert(1) hue-rotate(180deg)';document.documentElement.style.colorScheme='dark';var s=document.createElement('style');s.textContent='body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}';(document.head||document.documentElement).appendChild(s);"
+            }
             let script = WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             config.userContentController.addUserScript(script)
         }
