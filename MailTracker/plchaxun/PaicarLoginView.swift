@@ -89,26 +89,6 @@ struct PaicarModuleView: View {
         .modifier(PaicarModuleBackModifier(loggedIn: loggedIn))
     }
 
-    private func autoLogin() {
-        // 退出登录后不自动登录,停在登录页等用户手动点
-        if PaicarApi.justLoggedOut {
-            PaicarApi.justLoggedOut = false
-            return
-        }
-        let u = PaicarSession.savedUserNo
-        let p = PaicarSession.savedUserPwd
-        Task {
-            do {
-                let info = try await PaicarApi.login(userNo: u, plainPassword: p)
-                PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
-                PaicarApi.silentAuthExpired = false
-                await MainActor.run { loggedIn = true }
-            } catch {
-                await MainActor.run { loggedIn = false }
-            }
-        }
-    }
-
     private func isActive(_ t: PaicarNavTarget) -> Binding<Bool> {
         Binding(
             get: { navTarget == t },
@@ -250,14 +230,9 @@ struct PaicarLoginView: View {
             do {
                 let info = try await PaicarApi.login(userNo: u, plainPassword: pwd)
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
+                PaicarProfileHolder.profile = nil
                 loading = false
                 PaicarApi.justLoggedOut = false
-                PaicarApi.silentAuthExpired = true
-                do {
-                    let j = try await PaicarApi.profile()
-                    PaicarProfileHolder.profile = PaicarProfile.fromJson(j)
-                } catch { /* 静默 */ }
-                PaicarApi.silentAuthExpired = false
                 NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
             } catch {
                 loading = false
