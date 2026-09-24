@@ -391,12 +391,14 @@ struct PaicarAuthExpiredHandler: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onReceive(NotificationCenter.default.publisher(for: .paicarAuthExpired)) { _ in
+                PaicarApi.silentAuthExpired = true
                 show = true
             }
             .alert("账号已在别处登入", isPresented: $show) {
                 Button("取消", role: .cancel) {
                     PaicarSession.clear()
                     PaicarProfileHolder.profile = nil
+                    PaicarApi.silentAuthExpired = false
                     NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
                 }
                 Button("重新登录") {
@@ -408,11 +410,12 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                                 let info = try await PaicarApi.login(userNo: u, plainPassword: p)
                                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
                                 PaicarProfileHolder.profile = nil
+                                PaicarApi.silentAuthExpired = false
                                 show = false
-                                // 通知当前页面重新加载数据
                                 NotificationCenter.default.post(name: .paicarReloadAfterLogin, object: nil)
                             } catch {
                                 PaicarSession.clear()
+                                PaicarApi.silentAuthExpired = false
                                 NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
                             }
                         }
