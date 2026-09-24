@@ -333,45 +333,17 @@ struct WebHelperView: View {
         .background(pageBg)
         .clipped()
         .navigationBarHidden(true)
-        // 交互式边缘手势：左缘右滑 → 有上一页则网页后退、没有则返回主界面；右缘左滑 → 仅网页后退
-        // 跟手拖动、左边露出上一页预览；回滑或未过半松手取消，过半/快速滑动才真正触发
+        // 右缘左滑：直接网页后退（与左上角返回按钮效果一致，不做跟手预览）
         .highPriorityGesture(
-            DragGesture(minimumDistance: 25)
-                .onChanged { value in
+            DragGesture(minimumDistance: 30)
+                .onEnded { value in
                     let w = UIScreen.main.bounds.width
                     let sx = value.startLocation.x
                     let dx = value.translation.width
                     let dy = value.translation.height
-                    guard abs(dy) < 80, let wv = webView(at: currentIndex) else { return }
-                    // 右缘左滑：网页逐页后退（左缘右滑返回主界面由系统全屏手势处理）
-                    guard wv.canGoBack, sx > w - 45, dx < 0 else { return }
-                    let snap = (wv.navigationDelegate as? WebHelperWebView.Coordinator)?.previousSnapshot
-                    swipeActive = true
-                    swipePreview = snap
-                    swipeOffset = min(max(0, -dx), w)
-                }
-                .onEnded { value in
-                    guard swipeActive else { return }
-                    swipeActive = false
-                    let w = UIScreen.main.bounds.width
-                    let shouldPop = swipeOffset > w * 0.4 || abs(value.predictedEndTranslation.width) > w * 0.35
-                    guard let wv = webView(at: currentIndex) else {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
-                        swipePreview = nil
-                        return
-                    }
-                    if shouldPop && wv.canGoBack {
-                        // 网页后退：内容无过渡动画，保留滑出效果后 goBack
-                        withAnimation(.easeOut(duration: 0.22)) { swipeOffset = w }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            swipeOffset = 0
-                            swipePreview = nil
-                            wv.goBack()
-                        }
-                    } else {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { swipeOffset = 0 }
-                        swipePreview = nil
-                    }
+                    guard abs(dy) < 80, sx > w - 45, dx < -60,
+                          let wv = webView(at: currentIndex), wv.canGoBack else { return }
+                    wv.goBack()
                 }
         )
         .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() } }
