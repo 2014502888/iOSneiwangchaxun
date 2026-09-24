@@ -45,8 +45,9 @@ struct PaicarModuleView: View {
             // 退出登录后(justLoggedOut)停在登录页等手动点。
             PaicarApi.justLoggedOut = false
             PaicarSession.load()
-            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty && !PaicarApi.token.isEmpty {
-                loggedIn = true
+            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
+                loggedIn = false
+                autoLogin()
             } else {
                 loggedIn = false
             }
@@ -87,6 +88,22 @@ struct PaicarModuleView: View {
         // 登录后右缘左滑由 PaicarHomeView 自己处理(切回全部列表),不在此dismiss;
         // 未登录时(登录页)右缘左滑退出派车模块
         .modifier(PaicarModuleBackModifier(loggedIn: loggedIn))
+    }
+
+    private func autoLogin() {
+        let u = PaicarSession.savedUserNo
+        let p = PaicarSession.savedUserPwd
+        Task {
+            do {
+                let info = try await PaicarApi.login(userNo: u, plainPassword: p)
+                PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                PaicarProfileHolder.profile = nil
+                PaicarApi.justLoggedOut = false
+                loggedIn = true
+            } catch {
+                loggedIn = false
+            }
+        }
     }
 
     private func isActive(_ t: PaicarNavTarget) -> Binding<Bool> {
