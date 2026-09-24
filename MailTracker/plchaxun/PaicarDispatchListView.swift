@@ -199,24 +199,12 @@ struct PaicarDispatchListView: View {
         // "＋"菜单由外部顶栏持有（PaicarDispatchListToolbar）
         .confirmationDialog("操作", isPresented: $showMenu, titleVisibility: .visible) {
             Button("派车申请") { newApply() }
-            Button("一键申请") { confirmApply = true }
-            Button("一键撤回") { confirmRecall = true }
+            Button("一键申请") { quickApply() }
+            Button("一键撤回") { quickRecall() }
             Button("申请配置") {
                 NotificationCenter.default.post(name: .paicarOpenQuickEdit, object: nil)
             }
             Button("取消", role: .cancel) {}
-        }
-        .alert("确认一键申请？", isPresented: $confirmApply) {
-            Button("取消", role: .cancel) {}
-            Button("确认申请", role: .destructive) { quickApply() }
-        } message: {
-            Text("将按配置批量创建申请单")
-        }
-        .alert("确认一键撤回？", isPresented: $confirmRecall) {
-            Button("取消", role: .cancel) {}
-            Button("确认撤回", role: .destructive) { quickRecall() }
-        } message: {
-            Text("将撤回并删除所有快捷申请单")
         }
         .onAppear {
             if !didInitialLoad {
@@ -563,14 +551,18 @@ struct PaicarDispatchListView: View {
     }
 
     private func quickApply() {
-        Task {
-            let cars = PaicarApi.loadQuickCars().filter { $0["enabled"] == "1" }
-            if cars.isEmpty {
-                toastMsg = "请先去配置界面填写相关信息"
-                return
-            }
-            runQuickApply(cars: cars)
+        let cars = PaicarApi.loadQuickCars().filter { $0["enabled"] == "1" }
+        if cars.isEmpty {
+            toastMsg = "请先去配置界面填写相关信息"
+            return
         }
+        // 二次确认
+        let alert = UIAlertController(title: "确认一键申请？", message: "将按配置批量创建 \(cars.count) 张申请单", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "确认申请", style: .default) { _ in
+            runQuickApply(cars: cars)
+        })
+        present(alert)
     }
 
     private func runQuickApply(cars: [[String: String]]) {
@@ -600,12 +592,21 @@ struct PaicarDispatchListView: View {
     }
 
     private func quickRecall() {
+        let ids = PaicarApi.loadQuickIds()
+        if ids.isEmpty {
+            toastMsg = "没有可撤回的申请单"
+            return
+        }
+        let alert = UIAlertController(title: "确认一键撤回？", message: "将撤回并删除所有快捷申请单", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "确认撤回", style: .destructive) { _ in
+            doQuickRecall(ids: ids)
+        })
+        present(alert)
+    }
+
+    private func doQuickRecall(ids: [String]) {
         Task {
-            let ids = PaicarApi.loadQuickIds()
-            if ids.isEmpty {
-                toastMsg = "没有可撤回的申请单"
-                return
-            }
             var fail = 0
             var failMsgs: [String] = []
             for id in ids {
@@ -624,6 +625,14 @@ struct PaicarDispatchListView: View {
             }
             load()
         }
+    }
+
+    private func present(_ alert: UIAlertController) {
+        guard let host = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first?.windows.first?.rootViewController else { return }
+        var top = host
+        while let presented = top.presentedViewController { top = presented }
+        top.present(alert, animated: true)
     }
 }
 
