@@ -261,11 +261,6 @@ struct WebHelperView: View {
     @State private var downloadTip: String?
     @State private var showShare = false
     @State private var shareURL: URL?
-    // 交互式边缘返回：跟手位移 + 上一页预览（网页上一页 / 主界面）
-    @State private var swipeOffset: CGFloat = 0
-    @State private var swipePreview: UIImage?
-    @State private var swipeActive = false
-    @State private var rootSnapshot: UIImage?
 
     private var isDark: Bool { colorScheme == .dark }
     private var fg: Color { isDark ? .white : .black }
@@ -274,15 +269,7 @@ struct WebHelperView: View {
     private var gray: Color { isDark ? Color(red: 0.69, green: 0.69, blue: 0.69) : Color(red: 0.62, green: 0.62, blue: 0.62) }
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            // 交互式返回预览：左边露出的上一页（网页上一页 / 主界面快照）
-            if let img = swipePreview {
-                Image(uiImage: img)
-                    .resizable()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-            }
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 topBar
                 // 进度条
                 GeometryReader { geo in
@@ -327,8 +314,6 @@ struct WebHelperView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 bottomTabs
-            }
-            .offset(x: swipeOffset)
         }
         .background(pageBg)
         .clipped()
@@ -346,9 +331,6 @@ struct WebHelperView: View {
                     wv.goBack()
                 }
         )
-        .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { rootSnapshot = EdgeSwipeBack.snapshotOfPreviousPage() } }
-        // 左缘右滑总是返回主菜单，不再因网页历史拦截
-        .onDisappear { FullScreenBack.blockPop = false }
         .sheet(isPresented: $showAccount) {
             WebHelperAccountView()
         }
