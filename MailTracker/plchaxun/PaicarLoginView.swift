@@ -20,6 +20,7 @@ struct PaicarModuleView: View {
     @State private var navMode = ""
     @State private var loggedIn = false
     @State private var autoLogging = false
+    private static var didAutoLoginOnce = false
 
     private var isDark: Bool { colorScheme == .dark }
 
@@ -28,10 +29,7 @@ struct PaicarModuleView: View {
             if loggedIn {
                 PaicarHomeView()
             } else if autoLogging {
-                VStack {
-                    ProgressView()
-                    Text("正在自动登录…").padding(.top, 8)
-                }
+                Color.clear
             } else {
                 PaicarLoginView()
             }
@@ -51,10 +49,13 @@ struct PaicarModuleView: View {
             // 退出登录后(justLoggedOut)停在登录页等手动点。
             PaicarApi.justLoggedOut = false
             PaicarSession.load()
-            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
+            if !PaicarModuleView.didAutoLoginOnce && !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
+                PaicarModuleView.didAutoLoginOnce = true
                 loggedIn = false
                 autoLogging = true
                 autoLogin()
+            } else if PaicarSession.loggedIn {
+                loggedIn = true
             } else {
                 loggedIn = false
             }
@@ -400,11 +401,14 @@ struct PaicarAuthExpiredHandler: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onReceive(NotificationCenter.default.publisher(for: .paicarAuthExpired)) { _ in
+                if PaicarAuthDialogState.isShowing { return }
+                PaicarAuthDialogState.isShowing = true
                 PaicarApi.silentAuthExpired = true
                 show = true
             }
             .alert("账号已在别处登入", isPresented: $show) {
                 Button("取消", role: .cancel) {
+                    PaicarAuthDialogState.isShowing = false
                     PaicarSession.clear()
                     PaicarProfileHolder.profile = nil
                     PaicarApi.silentAuthExpired = false
@@ -419,10 +423,12 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                                 let info = try await PaicarApi.login(userNo: u, plainPassword: p)
                                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
                                 PaicarProfileHolder.profile = nil
+                                PaicarAuthDialogState.isShowing = false
                                 PaicarApi.silentAuthExpired = false
                                 show = false
                                 NotificationCenter.default.post(name: .paicarReloadAfterLogin, object: nil)
                             } catch {
+                                PaicarAuthDialogState.isShowing = false
                                 PaicarSession.clear()
                                 PaicarApi.silentAuthExpired = false
                                 NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
