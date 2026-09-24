@@ -248,8 +248,13 @@ struct PaicarLoginView: View {
                 let info = try await PaicarApi.login(userNo: u, plainPassword: pwd)
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
                 loading = false
-                PaicarApi.silentAuthExpired = false
                 PaicarApi.justLoggedOut = false
+                PaicarApi.silentAuthExpired = true
+                do {
+                    let j = try await PaicarApi.profile()
+                    PaicarProfileHolder.profile = PaicarProfile.fromJson(j)
+                } catch { /* 静默 */ }
+                PaicarApi.silentAuthExpired = false
                 NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
             } catch {
                 loading = false
