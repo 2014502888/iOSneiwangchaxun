@@ -514,25 +514,10 @@ enum PaicarProfileHolder {
 
     static func load() async throws -> PaicarProfile {
         if let p = profile { return p }
-        do {
-            let j = try await PaicarApi.profile()
-            let p = PaicarProfile.fromJson(j)
-            profile = p
-            return p
-        } catch PaicarError.authExpired {
-            // 刚登录的token偶发410,静默重新登录一次再试,不弹顶号框
-            let u = PaicarSession.savedUserNo
-            let pwd = PaicarSession.savedUserPwd
-            guard !u.isEmpty && !pwd.isEmpty else { throw PaicarError.authExpired }
-            PaicarApi.silentAuthExpired = true
-            defer { PaicarApi.silentAuthExpired = false }
-            let info = try await PaicarApi.login(userNo: u, plainPassword: pwd)
-            PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
-            let j = try await PaicarApi.profile()
-            let p = PaicarProfile.fromJson(j)
-            profile = p
-            return p
-        }
+        let j = try await PaicarApi.profile()
+        let p = PaicarProfile.fromJson(j)
+        profile = p
+        return p
     }
 }
 

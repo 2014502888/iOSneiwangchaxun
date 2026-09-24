@@ -40,10 +40,13 @@ struct PaicarModuleView: View {
             }
         )
         .onAppear {
-            // 每次进入派车都用保存的账号密码重新登录（不信任旧 token；
-            // 旧会话被其他端顶掉后，若直接用旧 token 进主页会出现列表转圈/获取资料失败）
-            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty {
-                autoLogin()
+            // 对齐安卓:有本地token就直接进主页,不自动重新登录。
+            // token有效就正常用,无效时等实际操作请求返回410再弹框。
+            // 退出登录后(justLoggedOut)停在登录页等手动点。
+            PaicarApi.justLoggedOut = false
+            PaicarSession.load()
+            if !PaicarSession.savedUserNo.isEmpty && !PaicarSession.savedUserPwd.isEmpty && !PaicarApi.token.isEmpty {
+                loggedIn = true
             } else {
                 loggedIn = false
             }
