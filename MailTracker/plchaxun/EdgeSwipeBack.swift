@@ -118,7 +118,7 @@ enum FullScreenBack {
         // 全屏手势直接驱动它的私有 handleNavigationTransition:，复用系统原生 pop 动画
         guard let sys = nav.interactivePopGestureRecognizer,
               let targets = sys.value(forKey: "_targets") as? [NSObject],
-              let target = targets.first else { return }
+              let target = targets.first?.value(forKey: "_target") else { return }
         let sel = NSSelectorFromString("handleNavigationTransition:")
         let g = FullScreenPanGesture(target: target, action: sel)
         g.delegate = FullScreenBackDelegate.shared
