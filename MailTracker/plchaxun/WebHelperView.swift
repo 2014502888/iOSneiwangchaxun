@@ -94,6 +94,10 @@ struct WebHelperWebView: UIViewRepresentable {
         // 深浅色：背景跟随
         webView.isOpaque = false
         webView.backgroundColor = isDark ? UIColor.black : UIColor.white
+        webView.scrollView.backgroundColor = isDark ? UIColor.black : UIColor.white
+        if #available(iOS 15.0, *) {
+            webView.underPageBackgroundColor = isDark ? .black : .white
+        }
         // 网页返回上一页（顶栏按钮触发，仅当前选中站点响应）
         if backTick != context.coordinator.lastBackTick && isActive {
             context.coordinator.lastBackTick = backTick
@@ -145,11 +149,14 @@ struct WebHelperWebView: UIViewRepresentable {
             parent.canGoBack = webView.canGoBack
             // 深色模式：网页背景纯黑（对应安卓 onPageFinished 注入）
             if parent.isDark {
+                // 告诉网页当前是深色模式
+                let meta = "var m=document.querySelector('meta[name=color-scheme]')||document.createElement('meta');m.name='color-scheme';m.content='dark';document.head.appendChild(m);"
+                webView.evaluateJavaScript(meta, completionHandler: nil)
                 let css: String
                 if parent.site.name == "爱纯净" {
                     css = "html,body{background:#000!important;}"
                 } else {
-                    css = "html{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
+                    css = "body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
                 }
                 let js = "var s=document.createElement('style');s.textContent='\(css)';(document.head||document.documentElement).appendChild(s);"
                 webView.evaluateJavaScript(js, completionHandler: nil)
