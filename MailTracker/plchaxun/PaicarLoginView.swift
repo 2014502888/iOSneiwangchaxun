@@ -78,7 +78,9 @@ struct PaicarModuleView: View {
             navMode = (note.userInfo?["mode"] as? String) ?? ""
             navTarget = .finish
         }
-        .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
+        // 登录后右缘左滑由 PaicarHomeView 自己处理(切回全部列表),不在此dismiss;
+        // 未登录时(登录页)右缘左滑退出派车模块
+        .modifier(PaicarModuleBackModifier(loggedIn: loggedIn))
     }
 
     private func autoLogin() {
@@ -417,5 +419,28 @@ extension Notification.Name {
 extension View {
     func paicarAuthGuard() -> some View {
         modifier(PaicarAuthExpiredHandler())
+    }
+}
+
+// 登录后不挂右缘左滑dismiss手势(由PaicarHomeView自己处理);未登录时才挂
+struct PaicarModuleBackModifier: ViewModifier {
+    let loggedIn: Bool
+    func body(content: Content) -> some View {
+        if loggedIn {
+            content
+        } else {
+            content.highPriorityGesture(
+                DragGesture(minimumDistance: 30)
+                    .onEnded { value in
+                        let w = UIScreen.main.bounds.width
+                        let sx = value.startLocation.x
+                        let dx = value.translation.width
+                        let dy = value.translation.height
+                        guard abs(dy) < 80, sx > w - 45, dx < -60 else { return }
+                        // 未登录时右缘左滑:退出派车模块
+                        NotificationCenter.default.post(name: .paicarBackToRoot, object: nil)
+                    }
+            )
+        }
     }
 }
