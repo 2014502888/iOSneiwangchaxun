@@ -83,7 +83,7 @@ struct WebHelperWebView: UIViewRepresentable {
             if site.name == "爱纯净" {
                 js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);document.documentElement.style.background='#000';var s=document.createElement('style');s.textContent='html,body{background:#000!important;}';(document.head||document.documentElement).appendChild(s);"
             } else {
-                js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);document.documentElement.style.background='#000';document.documentElement.style.filter='invert(1) hue-rotate(180deg)';document.documentElement.style.colorScheme='dark';var s=document.createElement('style');s.textContent='body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}';(document.head||document.documentElement).appendChild(s);"
+                js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);document.documentElement.style.background='#000';document.documentElement.style.filter='invert(1) hue-rotate(180deg)';document.documentElement.style.colorScheme='dark';"
             }
             let script = WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             config.userContentController.addUserScript(script)
