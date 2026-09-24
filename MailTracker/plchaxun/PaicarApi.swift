@@ -178,10 +178,9 @@ enum PaicarApi {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
         let data = try await perform(req, timeout: 60, service: "App.Upload_uploadImage.go")
-        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw PaicarError.api("上传失败")
-        }
-        return obj
+        let body = String(data: data, encoding: .utf8) ?? ""
+        let r = try parseBody(body, service: "App.Upload_uploadImage.go")
+        return r.dataMap
     }
 
     // MARK: 登录 / 账号

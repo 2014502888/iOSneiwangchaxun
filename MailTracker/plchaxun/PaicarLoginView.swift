@@ -107,6 +107,8 @@ struct PaicarModuleView: View {
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
                 PaicarProfileHolder.profile = nil
                 PaicarApi.justLoggedOut = false
+                PaicarApi.silentAuthExpired = false
+                PaicarAuthDialogState.isShowing = false
                 autoLogging = false
                 loggedIn = true
             } catch {
@@ -260,6 +262,8 @@ struct PaicarLoginView: View {
                 PaicarProfileHolder.profile = nil
                 loading = false
                 PaicarApi.justLoggedOut = false
+                PaicarApi.silentAuthExpired = false
+                PaicarAuthDialogState.isShowing = false
                 NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
             } catch {
                 loading = false
