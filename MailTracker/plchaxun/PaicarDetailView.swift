@@ -97,7 +97,7 @@ struct PaicarDetailView: View {
         .navigationBarHidden(true)
         .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
         .onAppear {
-            if order == nil && loading { load() }
+            load()
         }
         .overlay(
             Group {

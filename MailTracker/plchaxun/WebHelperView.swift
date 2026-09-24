@@ -145,13 +145,14 @@ struct WebHelperWebView: UIViewRepresentable {
             parent.canGoBack = webView.canGoBack
             // 深色模式：网页背景纯黑（对应安卓 onPageFinished 注入）
             if parent.isDark {
-                // 爱纯净自己支持深色模式,跳过反色
-                let isNativeDark = parent.site.name == "爱纯净"
-                if !isNativeDark {
-                    let css = "html{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas,[style*='background-image']{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
-                    let js = "(function(){var s=document.createElement('style');s.textContent='\(css)';(document.head||document.documentElement).appendChild(s);})();"
-                    webView.evaluateJavaScript(js, completionHandler: nil)
+                let css: String
+                if parent.site.name == "爱纯净" {
+                    css = "html,body{background:#000!important;}"
+                } else {
+                    css = "html{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
                 }
+                let js = "var s=document.createElement('style');s.textContent=arguments[0];(document.head||document.documentElement).appendChild(s);"
+                webView.evaluateJavaScript(js, arguments: [css], completionHandler: nil)
             }
             // 自动填充账号密码（对应安卓 autofillCredentials）
             autoFillIfNeeded(webView)
