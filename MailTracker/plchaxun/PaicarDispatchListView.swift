@@ -183,7 +183,6 @@ struct PaicarDispatchListView: View {
         }
         .background(pageBg)
         .background(
-            // 隐藏编程式跳转
             ZStack {
                 NavigationLink(
                     destination: PaicarApplyDetailView(orderId: pushApplyId ?? "").paicarAuthGuard(),
@@ -194,8 +193,7 @@ struct PaicarDispatchListView: View {
                     isActive: Binding(get: { pushDispatchId != nil }, set: { if !$0 { pushDispatchId = nil } })
                 ) { EmptyView() }
             }
-            .frame(width: 0, height: 0)
-            .hidden()
+            .opacity(0)
         )
         .overlay(
             Group {
