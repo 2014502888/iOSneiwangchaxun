@@ -31,3 +31,4 @@ Bundle ID（如 `["com.tencent.xin"]`），只对该 App 生效。
 .
 .
 
+# build with framework
