@@ -52,7 +52,10 @@ struct RootView: View {
             .background(pageBg.ignoresSafeArea())
         }
         .navigationViewStyle(.stack)
-        .onAppear { FullScreenBack.install() }
+        .onAppear {
+            FullScreenBack.install()
+            UIScrollView.appearance().backgroundColor = .clear
+        }
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToRoot)) { _ in
             showPaicar = false
         }
