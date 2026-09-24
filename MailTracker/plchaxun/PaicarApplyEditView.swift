@@ -210,60 +210,6 @@ struct PaicarApplyEditView: View {
         .padding(.horizontal, 16)
     }
 
-    private func customerTile(_ c: PaicarCustomer) -> some View {
-        let checked = selectedCustomers.contains(c.id)
-        return HStack(spacing: 8) {
-            Button {
-                if checked {
-                    selectedCustomers.remove(c.id)
-                } else {
-                    selectedCustomers.insert(c.id)
-                    if numTexts[c.id] == nil { numTexts[c.id] = "" }
-                    autoFillFromQuickCar(c)
-                }
-            } label: {
-                Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .foregroundColor(checked ? blue : fg)
-                    .font(.system(size: 20))
-            }
-            Text(c.name)
-                .font(.system(size: 14))
-                .foregroundColor(fg)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            if checked {
-                TextField("件数", text: Binding(
-                    get: { numTexts[c.id] ?? "" },
-                    set: { numTexts[c.id] = $0 }
-                ))
-                .keyboardType(.numberPad)
-                .font(.system(size: 14))
-                .foregroundColor(fg)
-                .accentColor(fg)
-                .frame(width: 80, height: 40)
-                .multilineTextAlignment(.center)
-                .background(inputBg)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(border, lineWidth: 1))
-
-                Text("装货").font(.system(size: 12)).foregroundColor(fg)
-                Button {
-                    if shipmentIds.contains(c.id) {
-                        shipmentIds.remove(c.id)
-                    } else {
-                        shipmentIds.insert(c.id)
-                    }
-                } label: {
-                    Image(systemName: shipmentIds.contains(c.id) ? "checkmark.square.fill" : "square")
-                        .foregroundColor(blue)
-                        .font(.system(size: 18))
-                }
-            }
-        }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(tileBg))
-        .padding(.vertical, 2)
-    }
-
     private func pickArrival() {
         let alert = UIAlertController(title: "到达时间", message: nil, preferredStyle: .actionSheet)
         for t in quickTimes {
@@ -338,7 +284,7 @@ struct PaicarApplyEditView: View {
                 guard let c = e as? [String: Any] else { continue }
                 let cid = (c["customer_id"] as? String) ?? ""
                 if !cid.isEmpty {
-                    selectedCustomers.insert(cid)
+                    selectedCustomerId = cid
                     let n = (c["number"] as? String) ?? ""
                     if (c["shipment"] as? NSNumber)?.intValue == 1 { shipmentIds.insert(cid) }
                     numTexts[cid] = n
