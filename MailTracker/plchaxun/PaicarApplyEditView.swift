@@ -14,6 +14,7 @@ struct PaicarApplyEditView: View {
     @State private var specList: [PaicarCarSpec] = []
     @State private var selectedCustomerId = ""
     @State private var numTexts: [String: String] = [:]
+    @State private var numText = ""
     @State private var shipmentIds: Set<String> = []
     @State private var arrivalTime = ""
     @State private var liaisonId = ""
@@ -48,14 +49,6 @@ struct PaicarApplyEditView: View {
                 Text(postId == nil ? "登记申请单" : "编辑申请单")
                     .font(.system(size: 18, weight: .bold))
                     .frame(maxWidth: .infinity)
-                Button {
-                    save()
-                } label: {
-                    Text("提交")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(fg)
-                        .frame(width: 40, height: 44)
-                }
             }
             .foregroundColor(fg)
             .background(pageBg)
@@ -75,7 +68,7 @@ struct PaicarApplyEditView: View {
                         } label: {
                             Text(arrivalTime.isEmpty ? "请选择时间 ▼" : arrivalTime)
                                 .font(.system(size: 14))
-                                .foregroundColor(fg)
+                                .foregroundColor(arrivalTime.isEmpty ? Color(white: 0.55) : fg)
                                 .frame(maxWidth: .infinity)
                                 .padding(12)
                                 .background(inputBg)
@@ -86,28 +79,18 @@ struct PaicarApplyEditView: View {
                         section("装货点 / 客户")
                         dropdown(items: customerList.map { ($0.name, $0.id) }, selected: selectedCustomerId, hint: "请选择客户") { v in
                             selectedCustomerId = v
-                            if numTexts[v] == nil { numTexts[v] = "" }
                             if let c = customerList.first(where: { $0.id == v }) { autoFillFromQuickCar(c) }
                         }
                         .padding(.horizontal, 16)
-                        // 已选客户件数
-                        if !selectedCustomerId.isEmpty, let c = customerList.first(where: { $0.id == selectedCustomerId }) {
-                            HStack(spacing: 8) {
-                                Text("件数").font(.system(size: 13)).foregroundColor(fg)
-                                TextField("件数", text: Binding(
-                                    get: { numTexts[c.id] ?? "" },
-                                    set: { numTexts[c.id] = $0 }
-                                ))
-                                .keyboardType(.numberPad)
-                                .font(.system(size: 13))
-                                .foregroundColor(fg)
-                                .frame(width: 80, height: 36)
-                                .multilineTextAlignment(.center)
-                                .background(inputBg)
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(border, lineWidth: 1))
-                            }
-                            .padding(.horizontal, 16).padding(.top, 4)
+
+                        section("申请车型")
+                        dropdown(items: specList.map { ($0.specs, $0.specs) }, selected: carSpecs, hint: "请选择车型") { v in
+                            carSpecs = v
+                            if v.contains("5.3") { numText = "1000" }
+                            else if v.contains("7.6") { numText = "2500" }
+                            else if v.contains("9.6") { numText = "3000" }
                         }
+                        .padding(.horizontal, 16)
 
                         section("联系人")
                         dropdown(items: liaisonList.map { ($0.name, $0.id) }, selected: liaisonId, hint: "请选择联系人") { v in liaisonId = v }
@@ -115,8 +98,17 @@ struct PaicarApplyEditView: View {
                         section("邮路名称")
                         dropdown(items: routeList.map { ($0.name, $0.id) }, selected: routeId, hint: "请选择邮路") { v in routeId = v }
 
-                        section("申请车型")
-                        dropdown(items: specList.map { ($0.specs, $0.specs) }, selected: carSpecs, hint: "请选择车型") { v in carSpecs = v }
+                        section("件数")
+                        TextField("请输入件数", text: $numText)
+                            .keyboardType(.numberPad)
+                            .font(.system(size: 14))
+                            .foregroundColor(fg)
+                            .accentColor(fg)
+                            .multilineTextAlignment(.center)
+                            .padding(12)
+                            .background(inputBg)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(border, lineWidth: 1))
+                        .padding(.horizontal, 16)
 
                         section("备注")
                         TextField("选填", text: $remarks)
@@ -188,7 +180,7 @@ struct PaicarApplyEditView: View {
     }
 
     private func dropdown(items: [(String, String)], selected: String, hint: String, onSelect: @escaping (String) -> Void) -> some View {
-        let current = items.first(where: { $0.1 == selected })?.0 ?? hint
+        let current = selected.isEmpty ? (hint + " ▼") : (items.first(where: { $0.1 == selected })?.0 ?? (hint + " ▼"))
         return Button {
             let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
             for item in items {
@@ -287,7 +279,7 @@ struct PaicarApplyEditView: View {
                     selectedCustomerId = cid
                     let n = (c["number"] as? String) ?? ""
                     if (c["shipment"] as? NSNumber)?.intValue == 1 { shipmentIds.insert(cid) }
-                    numTexts[cid] = n
+                    numText = n
                 }
             }
         }
@@ -300,12 +292,12 @@ struct PaicarApplyEditView: View {
         var customerJson: [[String: Any]] = []
         for cid in [selectedCustomerId] {
             guard let c = customerList.first(where: { $0.id == cid }) else { continue }
-            let num = Int(numTexts[cid] ?? "") ?? 0
+            let num = Int(numText) ?? 0
             totalNumber += num
             customerJson.append([
                 "id": cid,
                 "customerName": c.name,
-                "number": numTexts[cid] ?? "",
+                "number": numText,
                 "shipment": 1,
             ])
         }
