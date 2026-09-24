@@ -454,7 +454,7 @@ struct PaicarDispatchListView: View {
                 Text("\(o.number)件 · \(o.carSpecs) · \(o.arrivalTime)")
                     .font(.system(size: 12)).foregroundColor(Color(white: 0.95))
                 if !o.createTime.isEmpty {
-                    Text("\(o.createTime) 登记 \(o.createName)")
+                    Text("登记 \(o.createName) \(o.createTime)")
                         .font(.system(size: 12)).foregroundColor(Color(white: 0.95))
                 }
             }
