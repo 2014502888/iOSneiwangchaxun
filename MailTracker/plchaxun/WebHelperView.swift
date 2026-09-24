@@ -151,8 +151,10 @@ struct WebHelperWebView: UIViewRepresentable {
                 } else {
                     css = "html{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
                 }
-                let js = "var s=document.createElement('style');s.textContent=arguments[0];(document.head||document.documentElement).appendChild(s);"
-                webView.evaluateJavaScript(js, arguments: [css], completionHandler: nil)
+                let jsonData = try? JSONSerialization.data(withJSONObject: css, options: [])
+                let jsonStr = String(data: jsonData ?? Data(), encoding: .utf8) ?? '""'
+                let js = "var s=document.createElement('style');s.textContent=\(jsonStr);(document.head||document.documentElement).appendChild(s);"
+                webView.evaluateJavaScript(js, completionHandler: nil)
             }
             // 自动填充账号密码（对应安卓 autofillCredentials）
             autoFillIfNeeded(webView)
