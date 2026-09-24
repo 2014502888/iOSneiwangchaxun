@@ -11,24 +11,17 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Build dylib with clang
-        continue-on-error: true
+      - name: Build dylib
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "SDK: $SDK"
-          clang -arch arm64 -arch arm64e \
+          clang -arch arm64 \
                 -isysroot "$SDK" \
                 -dynamiclib -fobjc-arc \
                 -install_name @rpath/FullScreenBackTweak.dylib \
                 -o tweak/FullScreenBackTweak.dylib \
-                tweak/FullScreenBackTweak.m 2>&1 | tee tweak/build.log
-          ls -la tweak/
-      - name: Upload log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dylib-build-log
-          path: tweak/build.log
+                tweak/FullScreenBackTweak.m
+          ls -la tweak/FullScreenBackTweak.dylib
       - name: Upload dylib
         uses: actions/upload-artifact@v4
         with:
