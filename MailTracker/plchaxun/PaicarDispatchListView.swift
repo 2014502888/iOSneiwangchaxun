@@ -87,6 +87,8 @@ struct PaicarDispatchListView: View {
     // UI
     @State private var toastMsg: String?
     @State private var showMenu = false
+    @State private var confirmApply = false
+    @State private var confirmRecall = false
     @State private var contentHeight: CGFloat = 0
     @State private var viewportHeight: CGFloat = 0
 
@@ -197,12 +199,24 @@ struct PaicarDispatchListView: View {
         // "＋"菜单由外部顶栏持有（PaicarDispatchListToolbar）
         .confirmationDialog("操作", isPresented: $showMenu, titleVisibility: .visible) {
             Button("派车申请") { newApply() }
-            Button("一键申请") { quickApply() }
-            Button("一键撤回") { quickRecall() }
+            Button("一键申请") { confirmApply = true }
+            Button("一键撤回") { confirmRecall = true }
             Button("申请配置") {
                 NotificationCenter.default.post(name: .paicarOpenQuickEdit, object: nil)
             }
             Button("取消", role: .cancel) {}
+        }
+        .alert("确认一键申请？", isPresented: $confirmApply) {
+            Button("取消", role: .cancel) {}
+            Button("确认申请", role: .destructive) { quickApply() }
+        } message: {
+            Text("将按配置批量创建申请单")
+        }
+        .alert("确认一键撤回？", isPresented: $confirmRecall) {
+            Button("取消", role: .cancel) {}
+            Button("确认撤回", role: .destructive) { quickRecall() }
+        } message: {
+            Text("将撤回并删除所有快捷申请单")
         }
         .onAppear {
             if !didInitialLoad {

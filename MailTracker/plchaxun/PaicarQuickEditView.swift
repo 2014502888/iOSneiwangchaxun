@@ -33,17 +33,24 @@ struct PaicarQuickEditView: View {
                 } label: {
                     Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).foregroundColor(.blue).frame(width: 44, height: 44).contentShape(Rectangle())
                 }
-                Text("快捷申请配置")
+                Text("申请配置")
                     .font(.system(size: 18, weight: .bold))
                     .frame(maxWidth: .infinity)
-                Color.clear.frame(width: 40, height: 44)
+                Button("添加") { addRow() }
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(blue)
+                    .padding(.trailing, 12)
+                Button("保存") { save() }
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(blue)
+                    .padding(.trailing, 16)
             }
             .foregroundColor(fg)
             .background(pageBg)
 
             ScrollView {
                 VStack(spacing: 0) {
-                    Text("可配置 1~6 部常用车，一键申请时按配置批量创建申请单")
+                    Text("按配置批量创建派车单设置")
                         .font(.system(size: 12))
                         .foregroundColor(hintColor)
                         .frame(maxWidth: .infinity)
@@ -59,33 +66,7 @@ struct PaicarQuickEditView: View {
                         }
                         .padding(.horizontal, 16)
 
-                        Button {
-                            addRow()
-                        } label: {
-                            Text("+ 添加一部")
-                                .font(.system(size: 14))
-                                .foregroundColor(blue)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.5).opacity(0.08)))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-
-                        Button {
-                            save()
-                        } label: {
-                            Text(saved ? "已保存 ✓" : "保存配置")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .background(saved ? Color(red: 0.3, green: 0.68, blue: 0.31) : blue)
-                                .cornerRadius(10)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
-                        .padding(.bottom, 40)
+                        Color.clear.frame(height: 40)
                     }
                 }
             }
@@ -129,7 +110,7 @@ struct PaicarQuickEditView: View {
                     .foregroundColor(fg)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button {
-                    rows.remove(at: index)
+                    confirmDelete(index)
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 15))
@@ -159,13 +140,6 @@ struct PaicarQuickEditView: View {
                 pickRow("邮路", value: r["routeName"] ?? "", hint: "选择邮路") {
                     showPicker((index, "route"))
                 }
-                Toggle(isOn: Binding(
-                    get: { rows[index]["shipment"] == "1" },
-                    set: { rows[index]["shipment"] = $0 ? "1" : "0" }
-                )) {
-                    Text("装货").font(.system(size: 14)).foregroundColor(fg)
-                }
-                .tint(blue)
             }
         }
         .padding(12)
@@ -204,6 +178,16 @@ struct PaicarQuickEditView: View {
 
     private func toggleEnabled(_ idx: Int) {
         rows[idx]["enabled"] = rows[idx]["enabled"] == "1" ? "0" : "1"
+    }
+
+    private func confirmDelete(_ idx: Int) {
+        let name = rows[idx]["customerName"]?.isEmpty == false ? rows[idx]["customerName"]! : "第 \(idx + 1) 部"
+        let alert = UIAlertController(title: "删除该配置", message: "确认删除「\(name)」？", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "删除", style: .destructive) { _ in
+            rows.remove(at: idx)
+        })
+        present(alert)
     }
 
     private func addRow() {
