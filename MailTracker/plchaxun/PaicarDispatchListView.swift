@@ -233,6 +233,9 @@ struct PaicarDispatchListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .paicarShowMenu)) { _ in
             showMenu = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarReloadAfterLogin)) { _ in
+            load()
+        }
     }
 
     private var renderedItems: [PaicarListItem] {

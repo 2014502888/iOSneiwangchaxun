@@ -407,7 +407,10 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                             do {
                                 let info = try await PaicarApi.login(userNo: u, plainPassword: p)
                                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                                PaicarProfileHolder.profile = nil
                                 show = false
+                                // 通知当前页面重新加载数据
+                                NotificationCenter.default.post(name: .paicarReloadAfterLogin, object: nil)
                             } catch {
                                 PaicarSession.clear()
                                 NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
@@ -426,6 +429,7 @@ struct PaicarAuthExpiredHandler: ViewModifier {
 
 extension Notification.Name {
     static let paicarForceLogin = Notification.Name("paicarForceLogin")
+    static let paicarReloadAfterLogin = Notification.Name("paicarReloadAfterLogin")
 }
 
 extension View {
