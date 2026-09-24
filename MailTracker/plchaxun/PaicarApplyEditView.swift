@@ -84,8 +84,37 @@ struct PaicarApplyEditView: View {
                         .padding(.horizontal, 16)
 
                         section("装货点 / 客户")
-                        ForEach(customerList) { c in
-                            customerTile(c)
+                        Button {
+                            pickCustomers()
+                        } label: {
+                            HStack {
+                                Text(selectedCustomers.isEmpty ? "请选择客户 ▼" : "已选 \(selectedCustomers.count) 个客户 ▼")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(selectedCustomers.isEmpty ? hintColor : fg)
+                                Spacer()
+                            }
+                            .padding(12)
+                            .background(inputBg)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(border, lineWidth: 1))
+                        }
+                        .padding(.horizontal, 16)
+                        // 已选客户显示件数
+                        ForEach(customerList.filter { selectedCustomers.contains($0.id) }) { c in
+                            HStack(spacing: 8) {
+                                Text(c.name).font(.system(size: 13)).foregroundColor(fg).frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+                                TextField("件数", text: Binding(
+                                    get: { numTexts[c.id] ?? "" },
+                                    set: { numTexts[c.id] = $0 }
+                                ))
+                                .keyboardType(.numberPad)
+                                .font(.system(size: 13))
+                                .foregroundColor(fg)
+                                .frame(width: 80, height: 36)
+                                .multilineTextAlignment(.center)
+                                .background(inputBg)
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(border, lineWidth: 1))
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 4)
                         }
                         .padding(.horizontal, 16)
 
@@ -243,6 +272,24 @@ struct PaicarApplyEditView: View {
         .padding(.vertical, 2)
     }
 
+    private func pickCustomers() {
+        let alert = UIAlertController(title: "选择客户", message: "勾选需要的客户", preferredStyle: .actionSheet)
+        for c in customerList {
+            let checked = selectedCustomers.contains(c.id)
+            alert.addAction(UIAlertAction(title: (checked ? "✓ " : "") + c.name, style: .default) { _ in
+                if checked {
+                    selectedCustomers.remove(c.id)
+                } else {
+                    selectedCustomers.insert(c.id)
+                    if numTexts[c.id] == nil { numTexts[c.id] = "" }
+                    autoFillFromQuickCar(c)
+                }
+            })
+        }
+        alert.addAction(UIAlertAction(title: "完成", style: .cancel))
+        present(alert)
+    }
+
     private func pickArrival() {
         let alert = UIAlertController(title: "到达时间", message: nil, preferredStyle: .actionSheet)
         for t in quickTimes {
@@ -339,7 +386,7 @@ struct PaicarApplyEditView: View {
                 "id": cid,
                 "customerName": c.name,
                 "number": numTexts[cid] ?? "",
-                "shipment": shipmentIds.contains(cid) ? 1 : 0,
+                "shipment": 1,
             ])
         }
         if totalNumber < 1 { toastMsg = "请填写件数"; return }

@@ -123,10 +123,20 @@ struct PaicarQuickEditView: View {
                     showPicker((index, "customer"))
                 }
                 HStack(spacing: 8) {
-                    field("件数", text: Binding(
+                    Text("件数").font(.system(size: 13)).foregroundColor(fg).frame(width: 56, alignment: .leading)
+                    TextField("件数", text: Binding(
                         get: { rows[index]["number"] ?? "" },
                         set: { rows[index]["number"] = $0 }
-                    ), keyboard: .numberPad)
+                    ))
+                    .keyboardType(.numberPad)
+                    .font(.system(size: 13))
+                    .foregroundColor(fg)
+                    .accentColor(fg)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(inputBg)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(border, lineWidth: 1))
                     pickRow("车型", value: r["carSpecs"] ?? "", hint: "选择", compact: true) {
                         showPicker((index, "spec"))
                     }
