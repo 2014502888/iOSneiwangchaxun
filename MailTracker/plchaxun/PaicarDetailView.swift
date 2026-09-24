@@ -207,7 +207,7 @@ struct PaicarDetailView: View {
     private func actionBar(_ o: PaicarDispatchOrder) -> some View {
         let p = PaicarProfileHolder.profile
         let canArrange = o.statusCode == "004" && (p?.rolesId == "1" || p?.rolesId == "7")
-        let canRecall = o.statusCode != "999" && (p == nil || o.createId == p!.id || p!.rolesId == "1" || p!.rolesId == "7")
+        let canRecall = (o.statusCode == "001" || o.statusCode == "003") && (p == nil || o.createId == p!.id || p!.rolesId == "1" || p!.rolesId == "7")
         let canFinish = o.statusCode == "004"
 
         return HStack(spacing: 8) {
