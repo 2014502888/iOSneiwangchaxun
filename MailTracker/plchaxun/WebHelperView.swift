@@ -71,6 +71,18 @@ struct WebHelperWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
+        // 深色模式：文档一打开就注入反色CSS，避免白屏闪烁
+        if isDark {
+            let css: String
+            if site.name == "爱纯净" {
+                css = "html,body{background:#000!important;}"
+            } else {
+                css = "body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
+            }
+            let js = "var m=document.createElement('meta');m.name='color-scheme';m.content='dark';document.documentElement.appendChild(m);var s=document.createElement('style');s.textContent='\(css)';(document.head||document.documentElement).appendChild(s);"
+            let script = WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            config.userContentController.addUserScript(script)
+        }
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
@@ -147,20 +159,7 @@ struct WebHelperWebView: UIViewRepresentable {
             parent.progress = 1.0
             parent.title = webView.title ?? parent.site.name
             parent.canGoBack = webView.canGoBack
-            // 深色模式：网页背景纯黑（对应安卓 onPageFinished 注入）
-            if parent.isDark {
-                // 告诉网页当前是深色模式
-                let meta = "var m=document.querySelector('meta[name=color-scheme]')||document.createElement('meta');m.name='color-scheme';m.content='dark';document.head.appendChild(m);"
-                webView.evaluateJavaScript(meta, completionHandler: nil)
-                let css: String
-                if parent.site.name == "爱纯净" {
-                    css = "html,body{background:#000!important;}"
-                } else {
-                    css = "body{-webkit-filter:invert(1) hue-rotate(180deg)!important;}img,video,iframe,canvas{-webkit-filter:invert(1) hue-rotate(180deg)!important;}"
-                }
-                let js = "var s=document.createElement('style');s.textContent='\(css)';(document.head||document.documentElement).appendChild(s);"
-                webView.evaluateJavaScript(js, completionHandler: nil)
-            }
+            // 深色模式CSS已在atDocumentStart注入，这里不用重复
             // 自动填充账号密码（对应安卓 autofillCredentials）
             autoFillIfNeeded(webView)
             // 后退完成后若还有更早历史，缓存当前页供下次后退预览
