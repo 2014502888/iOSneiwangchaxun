@@ -32,7 +32,7 @@ struct RootView: View {
 
                         entryButton("外网查询", color: green) { ExternalView() }
                         entryButton("内网查询", color: yellow) { InternalView() }
-                        entryButton("网址助手", color: orange) { WebHelperView() }
+                        entryButton("网址助手", color: Color(red: 1.0, green: 0.43, blue: 0.25)) { WebHelperView() }
                         entryButton("远程开机", color: purple) { RemoteBootView() }
 
                         // 版本号：便于确认安装的是哪个 build（排查装错版本）
