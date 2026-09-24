@@ -12,7 +12,7 @@ struct PaicarApplyEditView: View {
     @State private var liaisonList: [PaicarLiaison] = []
     @State private var routeList: [PaicarRoute] = []
     @State private var specList: [PaicarCarSpec] = []
-    @State private var selectedCustomers: Set<String> = []
+    @State private var selectedCustomerId = ""
     @State private var numTexts: [String: String] = [:]
     @State private var shipmentIds: Set<String> = []
     @State private var arrivalTime = ""
@@ -73,7 +73,7 @@ struct PaicarApplyEditView: View {
                         Button {
                             pickArrival()
                         } label: {
-                            Text(arrivalTime.isEmpty ? "请选择 ▼" : arrivalTime)
+                            Text(arrivalTime.isEmpty ? "请选择时间 ▼" : arrivalTime)
                                 .font(.system(size: 14))
                                 .foregroundColor(fg)
                                 .frame(maxWidth: .infinity)
@@ -84,24 +84,16 @@ struct PaicarApplyEditView: View {
                         .padding(.horizontal, 16)
 
                         section("装货点 / 客户")
-                        Button {
-                            pickCustomers()
-                        } label: {
-                            HStack {
-                                Text(selectedCustomers.isEmpty ? "请选择客户 ▼" : "已选 \(selectedCustomers.count) 个客户 ▼")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(selectedCustomers.isEmpty ? Color(white: 0.45) : fg)
-                                Spacer()
-                            }
-                            .padding(12)
-                            .background(inputBg)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(border, lineWidth: 1))
+                        dropdown(items: customerList.map { ($0.name, $0.id) }, selected: selectedCustomerId, hint: "请选择客户") { v in
+                            selectedCustomerId = v
+                            if numTexts[v] == nil { numTexts[v] = "" }
+                            if let c = customerList.first(where: { $0.id == v }) { autoFillFromQuickCar(c) }
                         }
                         .padding(.horizontal, 16)
-                        // 已选客户显示件数
-                        ForEach(customerList.filter { selectedCustomers.contains($0.id) }) { c in
+                        // 已选客户件数
+                        if !selectedCustomerId.isEmpty, let c = customerList.first(where: { $0.id == selectedCustomerId }) {
                             HStack(spacing: 8) {
-                                Text(c.name).font(.system(size: 13)).foregroundColor(fg).frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+                                Text("件数").font(.system(size: 13)).foregroundColor(fg)
                                 TextField("件数", text: Binding(
                                     get: { numTexts[c.id] ?? "" },
                                     set: { numTexts[c.id] = $0 }
@@ -114,9 +106,8 @@ struct PaicarApplyEditView: View {
                                 .background(inputBg)
                                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(border, lineWidth: 1))
                             }
-                            .padding(.horizontal, 12).padding(.vertical, 4)
+                            .padding(.horizontal, 16).padding(.top, 4)
                         }
-                        .padding(.horizontal, 16)
 
                         section("联系人")
                         dropdown(items: liaisonList.map { ($0.name, $0.id) }, selected: liaisonId, hint: "请选择联系人") { v in liaisonId = v }
@@ -132,8 +123,9 @@ struct PaicarApplyEditView: View {
                             .font(.system(size: 14))
                             .foregroundColor(fg)
                             .accentColor(fg)
+                            .multilineTextAlignment(.center)
                             .padding(12)
-                            .frame(minHeight: 88, alignment: .topLeading)
+                            .frame(minHeight: 88)
                             .background(inputBg)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(border, lineWidth: 1))
                             .padding(.horizontal, 16)
@@ -272,24 +264,6 @@ struct PaicarApplyEditView: View {
         .padding(.vertical, 2)
     }
 
-    private func pickCustomers() {
-        let alert = UIAlertController(title: "选择客户", message: "勾选需要的客户", preferredStyle: .actionSheet)
-        for c in customerList {
-            let checked = selectedCustomers.contains(c.id)
-            alert.addAction(UIAlertAction(title: (checked ? "✓ " : "") + c.name, style: .default) { _ in
-                if checked {
-                    selectedCustomers.remove(c.id)
-                } else {
-                    selectedCustomers.insert(c.id)
-                    if numTexts[c.id] == nil { numTexts[c.id] = "" }
-                    autoFillFromQuickCar(c)
-                }
-            })
-        }
-        alert.addAction(UIAlertAction(title: "完成", style: .cancel))
-        present(alert)
-    }
-
     private func pickArrival() {
         let alert = UIAlertController(title: "到达时间", message: nil, preferredStyle: .actionSheet)
         for t in quickTimes {
@@ -375,10 +349,10 @@ struct PaicarApplyEditView: View {
 
     private func save() {
         if saving { return }
-        if selectedCustomers.isEmpty { toastMsg = "至少选择一个装货点"; return }
+        if selectedCustomerId.isEmpty { toastMsg = "请选择客户"; return }
         var totalNumber = 0
         var customerJson: [[String: Any]] = []
-        for cid in selectedCustomers {
+        for cid in [selectedCustomerId] {
             guard let c = customerList.first(where: { $0.id == cid }) else { continue }
             let num = Int(numTexts[cid] ?? "") ?? 0
             totalNumber += num
