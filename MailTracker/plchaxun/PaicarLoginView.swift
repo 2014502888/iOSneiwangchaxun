@@ -90,6 +90,7 @@ struct PaicarModuleView: View {
             do {
                 let info = try await PaicarApi.login(userNo: u, plainPassword: p)
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                PaicarApi.silentAuthExpired = false
                 await MainActor.run { loggedIn = true }
             } catch {
                 await MainActor.run { loggedIn = false }
@@ -239,6 +240,7 @@ struct PaicarLoginView: View {
                 let info = try await PaicarApi.login(userNo: u, plainPassword: pwd)
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
                 loading = false
+                PaicarApi.silentAuthExpired = false
                 NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
             } catch {
                 loading = false
