@@ -1,11 +1,9 @@
 import SwiftUI
 import UIKit
 
-// MARK: - 边缘滑动返回（SwiftUI 手势版，交互式：跟手拖动、可取消，类似 iOS 系统级返回）
-// 用法：页面 body 上 .interactiveEdgeSwipeBack { presentationMode.wrappedValue.dismiss() }
-// 支持：屏幕左边缘右滑（横向为主、纵向位移小于 80pt 才触发）
-// 交互效果：拖动时当前页跟手右移、左边露出上一页快照；回滑或松手未过半则回弹取消；
-//          过半或快速滑动则动画移出并真正返回（与 iOS 系统 pop 手势一致）
+// MARK: - 边缘滑动返回
+// 左缘右滑跟手pop：由 FullScreenBack 统一驱动系统原生转场（见下方）
+// 右缘左滑返回：由 InteractiveSwipeBackModifier 实现（屏幕右边沿45px内、左滑>60pt触发）
 enum EdgeSwipeBack {
     /// 禁用系统左缘 pop 手势：带导航栏页面（内网/外网）的系统返回手势会吞掉左边缘触摸
     /// 但又不触发（navigationBarBackButtonHidden 下），导致页面自己的手势也收不到。
@@ -76,12 +74,10 @@ final class FullScreenPanGesture: UIPanGestureRecognizer {}
 final class FBSHaptic: NSObject {
     static let shared = FBSHaptic()
     private var generator: UIImpactFeedbackGenerator?
-    private var hasHaptic = false
     @objc func track(_ g: UIPanGestureRecognizer) {
         let w = UIScreen.main.bounds.width
         switch g.state {
         case .began:
-            hasHaptic = false
             generator = UIImpactFeedbackGenerator(style: .heavy)
             generator?.prepare()
         case .changed:
@@ -166,24 +162,3 @@ extension View {
     }
 }
 
-// MARK: - 旧版：一次性判断触发（保留备用）
-
-extension View {
-    func edgeSwipeBack(_ onSwipe: @escaping () -> Void) -> some View {
-        self.highPriorityGesture(
-            DragGesture(minimumDistance: 25)
-                .onEnded { value in
-                    let w = UIScreen.main.bounds.width
-                    let sx = value.startLocation.x
-                    let dx = value.translation.width
-                    let dy = value.translation.height
-                    guard abs(dy) < 80 else { return }
-                    if sx < 45 && dx > 70 {
-                        onSwipe()
-                    } else if sx > w - 45 && dx < -70 {
-                        onSwipe()
-                    }
-                }
-        )
-    }
-}

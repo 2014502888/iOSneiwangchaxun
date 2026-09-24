@@ -274,7 +274,7 @@ struct PaicarHomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶栏：返回键 + 居中标题（随 tab 变）+ 右侧占位（"＋"由列表页持有）
+            // 顶栏：返回键 + 居中标题（随 tab 变）+ 右侧 + 按钮（仅派车单tab显示）
             HStack(spacing: 0) {
                 Button {
                     // 返回根（退出派车模块）
