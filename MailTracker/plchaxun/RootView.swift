@@ -55,6 +55,10 @@ struct RootView: View {
         .onAppear {
             FullScreenBack.install()
             UIScrollView.appearance().backgroundColor = .clear
+            let navBar = UINavigationBar.appearance()
+            navBar.setBackgroundImage(UIImage(), for: .default)
+            navBar.shadowImage = UIImage()
+            navBar.isTranslucent = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToRoot)) { _ in
             showPaicar = false
