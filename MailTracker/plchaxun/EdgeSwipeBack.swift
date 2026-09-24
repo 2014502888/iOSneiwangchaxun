@@ -122,6 +122,7 @@ enum FullScreenBack {
         let sel = NSSelectorFromString("handleNavigationTransition:")
         let g = FullScreenPanGesture(target: target, action: sel)
         g.delegate = FullScreenBackDelegate.shared
+        g.addTarget(FBSHaptic.shared, action: #selector(FBSHaptic.track(_:)))
         nav.view.addGestureRecognizer(g)
 
     }
