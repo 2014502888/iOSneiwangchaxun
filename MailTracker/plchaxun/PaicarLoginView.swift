@@ -49,7 +49,10 @@ struct PaicarModuleView: View {
             }
             PaicarApi.onAuthExpired = {
                 DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: .paicarAuthExpired, object: nil)
+                    // 异步发通知时再查一次:logout后可能已经设了silent
+                    if !PaicarApi.silentAuthExpired {
+                        NotificationCenter.default.post(name: .paicarAuthExpired, object: nil)
+                    }
                 }
             }
         }
@@ -84,6 +87,11 @@ struct PaicarModuleView: View {
     }
 
     private func autoLogin() {
+        // 退出登录后不自动登录,停在登录页等用户手动点
+        if PaicarApi.justLoggedOut {
+            PaicarApi.justLoggedOut = false
+            return
+        }
         let u = PaicarSession.savedUserNo
         let p = PaicarSession.savedUserPwd
         Task {
@@ -241,6 +249,7 @@ struct PaicarLoginView: View {
                 PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: pwd)
                 loading = false
                 PaicarApi.silentAuthExpired = false
+                PaicarApi.justLoggedOut = false
                 NotificationCenter.default.post(name: .paicarLoginOK, object: nil)
             } catch {
                 loading = false

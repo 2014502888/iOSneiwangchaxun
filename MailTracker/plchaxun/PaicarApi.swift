@@ -27,6 +27,8 @@ enum PaicarApi {
     static var onAuthExpired: (() -> Void)?
     // 写操作(撤回/提交/结单等)期间静默:不弹顶号框,只静默退出
     static var silentAuthExpired = false
+    // 用户主动退出登录后不自动登录
+    static var justLoggedOut = false
 
     // MARK: 签名
 
