@@ -206,7 +206,10 @@ enum PaicarApi {
 
     static func profile() async throws -> [String: Any] {
         let r = try await get("App.User_user.profile", params: [])
-        if !r.ok { throw PaicarError.api("获取资料失败") }
+        if !r.ok {
+            if !silentAuthExpired { onAuthExpired?() }
+            throw PaicarError.authExpired
+        }
         return (r.dataMap["profile"] as? [String: Any]) ?? [:]
     }
 
