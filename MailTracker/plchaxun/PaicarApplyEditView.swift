@@ -13,9 +13,7 @@ struct PaicarApplyEditView: View {
     @State private var routeList: [PaicarRoute] = []
     @State private var specList: [PaicarCarSpec] = []
     @State private var selectedCustomerId = ""
-    @State private var numTexts: [String: String] = [:]
     @State private var numText = ""
-    @State private var shipmentIds: Set<String> = []
     @State private var arrivalTime = ""
     @State private var liaisonId = ""
     @State private var routeId = ""
@@ -227,8 +225,7 @@ struct PaicarApplyEditView: View {
     private func autoFillFromQuickCar(_ c: PaicarCustomer) {
         let cars = PaicarApi.defaultQuickCars()
         guard let match = cars.first(where: { $0["customerName"] == c.name }) else { return }
-        if let n = match["number"] { numTexts[c.id] = n }
-        if match["shipment"] == "1" { shipmentIds.insert(c.id) }
+        if numText.isEmpty, let n = match["number"] { numText = n }
         if liaisonId.isEmpty { liaisonId = match["liaisonId"] ?? "" }
         if routeId.isEmpty { routeId = match["routeId"] ?? "" }
         if carSpecs.isEmpty { carSpecs = match["carSpecs"] ?? "" }
@@ -278,7 +275,6 @@ struct PaicarApplyEditView: View {
                 if !cid.isEmpty {
                     selectedCustomerId = cid
                     let n = (c["number"] as? String) ?? ""
-                    if (c["shipment"] as? NSNumber)?.intValue == 1 { shipmentIds.insert(cid) }
                     numText = n
                 }
             }
