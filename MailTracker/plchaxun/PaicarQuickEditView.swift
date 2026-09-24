@@ -191,10 +191,6 @@ struct PaicarQuickEditView: View {
     }
 
     private func addRow() {
-        if rows.count >= 6 {
-            toastMsg = "最多 6 部"
-            return
-        }
         rows.append([
             "enabled": "1",
             "customerName": "", "number": "", "carSpecs": "",
