@@ -69,15 +69,20 @@ final class FBSHaptic: NSObject {
         switch g.state {
         case .began:
             hasHaptic = false
-            generator = UIImpactFeedbackGenerator(style: .medium)
+            generator = UIImpactFeedbackGenerator(style: .heavy)
             generator?.prepare()
         case .changed:
+            // 只记录拖过多少，不在 changed 时震
+            break
+        case .ended:
+            // 手指离开屏幕时，判断是否真的会返回：位移过半 或 快速右滑
             let tx = g.translation(in: g.view).x
-            if !hasHaptic && tx > w * 0.35 {
-                hasHaptic = true
+            let vx = g.velocity(in: g.view).x
+            if tx > w * 0.35 || vx > 300 {
                 generator?.impactOccurred(intensity: 1.0)
             }
-        case .ended, .cancelled, .failed:
+            generator = nil
+        case .cancelled, .failed:
             generator = nil
         default: break
         }
