@@ -250,9 +250,15 @@ struct PaicarMineView: View {
     }
 
     private func logout() {
+        // 退出过程中可能有未完成请求带着空token返回410,静默不弹顶号框
+        PaicarApi.silentAuthExpired = true
         PaicarSession.clear()
         PaicarProfileHolder.profile = nil
         NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+        // 1.5秒后恢复正常(登录页已显示完)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            PaicarApi.silentAuthExpired = false
+        }
     }
 }
 
