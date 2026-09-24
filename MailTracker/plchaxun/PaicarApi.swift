@@ -25,6 +25,8 @@ enum PaicarApi {
 
     // 登录失效回调（token 被其他端顶掉时触发，UI 层注册跳登录确认）
     static var onAuthExpired: (() -> Void)?
+    // 写操作(撤回/提交/结单等)期间静默:不弹顶号框,只静默退出
+    static var silentAuthExpired = false
 
     // MARK: 签名
 
@@ -57,7 +59,7 @@ enum PaicarApi {
         }
         let r = PaicarResult.fromJson(obj)
         if service != "App.User_user.login" && r.ret == authExpiredCode {
-            onAuthExpired?()
+            if !silentAuthExpired { onAuthExpired?() }
             throw PaicarError.authExpired
         }
         return r
@@ -437,8 +439,10 @@ enum PaicarApi {
 
     /// 一键撤回并删除：001 先撤回成 000 再删；000 直接删
     static func quickRecall(id: String) async throws {
+        silentAuthExpired = true
         try? await post("App.DispatchCar_applyOrder.recall", params: [("id", id)])
         let r2 = try await post("App.DispatchCar_applyOrder.delete", params: [("id", id)])
+        silentAuthExpired = false
         if !r2.ok { throw PaicarError.api(r2.msg.isEmpty ? "删除失败" : r2.msg) }
     }
 
