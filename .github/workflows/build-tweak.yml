@@ -1,0 +1,37 @@
+name: Build Tweak
+
+on:
+  push:
+    branches: [main]
+    paths: ['tweak/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Theos
+        run: |
+          sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
+          sudo mkdir -p /opt/theos/toolchain
+          # 下载 iOS SDK
+          sudo git clone --depth 1 https://github.com/CDNNow/ios-cmake-toolchains.git /tmp/tc
+          # 从 theos 官方下载 SDK
+          cd /opt/theos/sdks 2>/dev/null || sudo mkdir -p /opt/theos/sdks
+          curl -L -o /opt/theos/sdks/iPhoneOS15.0.sdk.tar.gz "https://github.com/theos/sdks/raw/master/iPhoneOS15.0.sdk.tar.gz"
+          cd /opt/theos/sdks && tar xzf iPhoneOS15.0.sdk.tar.gz
+          export THEOS=/opt/theos
+
+      - name: Build
+        working-directory: tweak
+        run: |
+          export THEOS=/opt/theos
+          make package FINAL=yes
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: FullScreenBackTweak
+          path: tweak/packages/*.deb

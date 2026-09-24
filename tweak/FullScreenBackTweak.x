@@ -1,18 +1,57 @@
-#include <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-// 全屏返回手势类
+// 全屏返回手势
 @interface FBSPanGesture : UIPanGestureRecognizer
 @end
 @implementation FBSPanGesture
 @end
 
-// 手势 delegate：仅在有上一页、横向右滑时响应
+// 震动
+@interface FBSHaptic : NSObject
++ (instancetype)shared;
+- (void)track:(UIPanGestureRecognizer *)g;
+@end
+@implementation FBSHaptic
+{
+    UIImpactFeedbackGenerator *_gen;
+}
++ (instancetype)shared {
+    static FBSHaptic *s;
+    static dispatch_once_t t;
+    dispatch_once(&t, ^{ s = [FBSHaptic new]; });
+    return s;
+}
+- (void)track:(UIPanGestureRecognizer *)g {
+    CGFloat w = [UIScreen mainScreen].bounds.size.width;
+    switch (g.state) {
+        case UIGestureRecognizerStateBegan:
+            _gen = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+            [_gen prepare];
+            break;
+        case UIGestureRecognizerStateEnded: {
+            CGFloat tx = [g translationInView:g.view].x;
+            CGFloat vx = [g velocityInView:g.view].x;
+            if (tx > w * 0.35 || vx > 300) {
+                [_gen impactOccurredWithIntensity:1.0];
+            }
+            _gen = nil;
+            break;
+        }
+        case UIGestureRecognizerStateCancelled:
+        case UIGestureRecognizerStateFailed:
+            _gen = nil;
+            break;
+        default: break;
+    }
+}
+@end
+
+// 手势 delegate
 @interface FBSDelegate : NSObject <UIGestureRecognizerDelegate>
 + (instancetype)shared;
 @end
-
 @implementation FBSDelegate
 + (instancetype)shared {
     static FBSDelegate *s;
@@ -20,7 +59,6 @@
     dispatch_once(&t, ^{ s = [FBSDelegate new]; });
     return s;
 }
-
 - (UINavigationController *)navOf:(UIView *)v {
     UIResponder *r = v.nextResponder;
     while (r) {
@@ -33,7 +71,6 @@
     }
     return nil;
 }
-
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)g {
     if (![g isKindOfClass:[UIPanGestureRecognizer class]]) return NO;
     UIPanGestureRecognizer *p = (id)g;
@@ -44,7 +81,6 @@
     if (fabs(t.x) < fabs(t.y)) return NO;
     return YES;
 }
-
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)g shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)o {
     return NO;
 }
@@ -57,14 +93,16 @@ static void FBSInstallOnNav(UINavigationController *nav) {
         }
         UIGestureRecognizer *sys = nav.interactivePopGestureRecognizer;
         NSArray *targets = [sys valueForKey:@"_targets"];
-        id target = targets.firstObject;   // wrapper 本身
+        id wrapper = targets.firstObject;
+        if (!wrapper) return;
+        id target = [wrapper valueForKey:@"_target"];
         if (!target) return;
         FBSPanGesture *gesture = [[FBSPanGesture alloc] initWithTarget:target
                                                                action:NSSelectorFromString(@"handleNavigationTransition:")];
         gesture.delegate = [FBSDelegate shared];
         gesture.maximumNumberOfTouches = 1;
+        [gesture addTarget:[FBSHaptic shared] action:@selector(track:)];
         [nav.view addGestureRecognizer:gesture];
-        sys.enabled = NO;
     } @catch (NSException *e) {}
 }
 
@@ -88,10 +126,8 @@ static void FBSInstall(void) {
 }
 
 %ctor {
-    // 启动后延迟安装，覆盖各导航控制器
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{ FBSInstall(); });
-    // 之后每次进入前台再补装一次
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification
                                                       object:nil queue:nil
                                                   usingBlock:^(NSNotification *n){ FBSInstall(); }];
