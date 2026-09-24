@@ -56,7 +56,7 @@ enum PaicarApi {
             throw PaicarError.api("响应解析失败")
         }
         let r = PaicarResult.fromJson(obj)
-        if service != "App.User_user.login" && (r.ret == authExpiredCode || r.ret < 0) {
+        if service != "App.User_user.login" && r.ret == authExpiredCode {
             onAuthExpired?()
             throw PaicarError.authExpired
         }
