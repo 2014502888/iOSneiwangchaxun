@@ -111,13 +111,46 @@ static void FBSWalk(UIViewController *vc) {
     for (UIViewController *c in vc.childViewControllers) FBSWalk(c);
 }
 
+static UIViewController *FBSTopVC(void) {
+    UIWindowScene *ws = nil;
+    for (UIWindowScene *s in [UIApplication sharedApplication].connectedScenes) {
+        if ([s isKindOfClass:[UIWindowScene class]] && s.activationState == UISceneActivationStateForegroundActive) { ws = s; break; }
+    }
+    if (!ws) return nil;
+    UIViewController *vc = ws.windows.firstObject.rootViewController;
+    while (vc.presentedViewController) vc = vc.presentedViewController;
+    return vc;
+}
+
+static void FBSShowSettings(void) {
+    UIViewController *top = FBSTopVC();
+    if (!top) return;
+    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"全屏返回设置" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [ac addAction:[UIAlertAction actionWithTitle:@"全屏返回: 开" style:UIAlertActionStyleDefault handler:nil]];
+    [ac addAction:[UIAlertAction actionWithTitle:@"关闭" style:UIAlertActionStyleCancel handler:nil]];
+    [top presentViewController:ac animated:YES completion:nil];
+}
+
+@interface FBSBtnTarget : NSObject
++ (instancetype)shared;
+- (void)onBtn;
+@end
+@implementation FBSBtnTarget
++ (instancetype)shared {
+    static FBSBtnTarget *s;
+    static dispatch_once_t t;
+    dispatch_once(&t, ^{ s = [FBSBtnTarget new]; });
+    return s;
+}
+- (void)onBtn { FBSShowSettings(); }
+@end
+
 static void FBSInstall(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         for (UIWindowScene *s in [UIApplication sharedApplication].connectedScenes) {
             if (![s isKindOfClass:[UIWindowScene class]]) continue;
             for (UIWindow *w in s.windows) {
                 if (w.rootViewController) FBSWalk(w.rootViewController);
-                // 悬浮设置按钮
                 static dispatch_once_t once;
                 dispatch_once(&once, ^{
                     UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -128,6 +161,7 @@ static void FBSInstall(void) {
                     [btn setTitle:@"设" forState:UIControlStateNormal];
                     [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
                     btn.titleLabel.font = [UIFont boldSystemFontOfSize:16];
+                    [btn addTarget:[FBSBtnTarget shared] action:@selector(onBtn) forControlEvents:UIControlEventTouchUpInside];
                     [w addSubview:btn];
                 });
             }
