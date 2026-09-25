@@ -280,9 +280,8 @@ struct PaicarFinishView: View {
                 leaveTime = nowTime()
                 loadDraft()
             } catch PaicarError.authExpired {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    presentationMode.wrappedValue.dismiss()
-                }
+                // 被顶号：不自动退页，停在原地等全局弹窗（AuthDialog）的 取消/重新登录 决定下一步。
+                loading = false
             } catch {
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
