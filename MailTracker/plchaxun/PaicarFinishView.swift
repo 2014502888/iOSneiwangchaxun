@@ -420,6 +420,8 @@ struct PaicarFinishView: View {
                     PaicarFlags.finishedDirty = true
                     PaicarFlags.dispatchDirty = true
                     toastMsg = "结单成功"
+                    // 通知列表: 切回"全部"并刷新, 刚结的单归入已结单、从全部消失
+                    NotificationCenter.default.post(name: .paicarBackToAllList, object: nil)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         presentationMode.wrappedValue.dismiss()
                     }

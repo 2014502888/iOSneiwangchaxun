@@ -234,7 +234,14 @@ struct PaicarDispatchListView: View {
         }
         // 右缘左滑返回：从已结单子tab切回全部
         .onReceive(NotificationCenter.default.publisher(for: .paicarBackToAllList)) { _ in
+            // 结单成功后: 强制切回"全部", 并按脏标记刷新全部列表
+            // (全部只归类待分配/待派车/已分配, 刚结的单自然从全部消失)
             if showFinished { showFinished = false }
+            if PaicarFlags.dispatchDirty || PaicarFlags.finishedDirty {
+                PaicarFlags.dispatchDirty = false
+                PaicarFlags.finishedDirty = false
+                load()
+            }
         }
         // 顶栏 + 按钮：弹出操作菜单
         .onReceive(NotificationCenter.default.publisher(for: .paicarShowMenu)) { _ in
