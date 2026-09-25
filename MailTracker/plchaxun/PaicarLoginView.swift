@@ -61,10 +61,9 @@ struct PaicarModuleView: View {
             }
             PaicarApi.onAuthExpired = {
                 DispatchQueue.main.async {
-                    // 异步发通知时再查一次:logout后可能已经设了silent
-                    if !PaicarApi.silentAuthExpired {
-                        NotificationCenter.default.post(name: .paicarAuthExpired, object: nil)
-                    }
+                    // 全局根级弹窗（对齐安卓 PaicarApp 全局弹）：不依赖每个页面挂监听，
+                    // 直接置状态，根 alert 盖在最上层；切页面瞬间也不会丢。
+                    AuthDialog.shared.isShowing = true
                 }
             }
         }
@@ -447,6 +446,14 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                 Text("是否重新登录？")
             }
     }
+}
+
+/// 全局登录失效弹窗状态（对齐安卓 PaicarApp.showAuthExpiredDialog）
+/// 根 RootView 只挂一个 alert 绑定它，不依赖每个页面挂通知监听。
+final class AuthDialog: ObservableObject {
+    static let shared = AuthDialog()
+    private init() {}
+    @Published var isShowing = false
 }
 
 class PaicarAuthDialogState {
