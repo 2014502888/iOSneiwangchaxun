@@ -459,8 +459,9 @@ final class AuthDialog {
 
     func show() {
         if isShowing { return }
-        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-              let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController ?? scene.windows.first?.rootViewController else { return }
+        guard let scene = (UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive }) as? UIWindowScene else { return }
+        let keyWindow = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first
+        guard let root = keyWindow?.rootViewController else { return }
         var top = root
         while let p = top.presentedViewController { top = p }
 
