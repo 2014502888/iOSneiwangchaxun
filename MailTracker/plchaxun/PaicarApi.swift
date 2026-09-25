@@ -525,7 +525,7 @@ enum PaicarSession {
         d.removeObject(forKey: kUser)
         PaicarApi.token = ""
         PaicarApi.userId = ""
-        hasLoadedOnce = false
+        PaicarApi.hasLoadedOnce = false
     }
 }
 
