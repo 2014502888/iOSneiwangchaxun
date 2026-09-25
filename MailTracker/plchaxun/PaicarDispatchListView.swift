@@ -221,6 +221,13 @@ struct PaicarDispatchListView: View {
             if !didInitialLoad {
                 didInitialLoad = true
                 load()
+            } else if PaicarFlags.dispatchDirty || PaicarFlags.finishedDirty {
+                // 结单/撤回/提交成功后回到列表: 脏标记表示数据已变, 必须重载全部列表;
+                // 之前只在"列表为空"时才重载, 导致刚结单完还卡在旧数据不刷新。
+                PaicarFlags.dispatchDirty = false
+                PaicarFlags.finishedDirty = false
+                if showFinished { loadFinished() }
+                load()
             } else if !loading && applies.isEmpty && dispatches.isEmpty && finishedList.isEmpty {
                 load()
             }
