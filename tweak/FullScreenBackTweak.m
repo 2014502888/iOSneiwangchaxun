@@ -1,8 +1,7 @@
-﻿#import <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-// ==================== 设置存储 ====================
 static NSString *kFBSKeyEnabled = @"fbs_enabled";
 static NSString *kFBSKeyHaptic  = @"fbs_haptic";
 static NSString *kFBSKeyStrength = @"fbs_strength";
@@ -17,19 +16,17 @@ static BOOL FBSGetHaptic(void) {
     id v = [d objectForKey:kFBSKeyHaptic];
     return v ? [v boolValue] : YES;
 }
-static double FBSGetStrength(void){
+static double FBSGetStrength(void) {
     NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
-    if ([d objectForKey:kFBSKeyStrength]) return [d doubleForKey:kFBSKeyStrength];
-    return 0.8;
+    id v = [d objectForKey:kFBSKeyStrength];
+    return v ? [v doubleValue] : 0.8;
 }
 
-// ==================== 全屏手势 ====================
 @interface FBSPanGesture : UIPanGestureRecognizer
 @end
 @implementation FBSPanGesture
 @end
 
-// ==================== 震动 ====================
 @interface FBSHaptic : NSObject
 + (instancetype)shared;
 - (void)track:(UIPanGestureRecognizer *)g;
@@ -73,7 +70,6 @@ static double FBSGetStrength(void){
 }
 @end
 
-// ==================== 手势delegate ====================
 @interface FBSDelegate : NSObject <UIGestureRecognizerDelegate>
 + (instancetype)shared;
 @end
@@ -112,9 +108,9 @@ static double FBSGetStrength(void){
 }
 @end
 
-// ==================== 悬浮设置球 ====================
-@interface FBSSettingsBall : UIWindow
+@interface FBSSettingsBall : UIView
 + (instancetype)shared;
+- (void)show;
 @end
 @implementation FBSSettingsBall
 {
@@ -130,7 +126,6 @@ static double FBSGetStrength(void){
     CGRect f = [UIScreen mainScreen].bounds;
     self = [super initWithFrame:CGRectMake(f.size.width - 56, f.size.height - 200, 44, 44)];
     if (self) {
-        self.windowLevel = UIWindowLevelAlert + 1;
         self.backgroundColor = [UIColor clearColor];
         self.userInteractionEnabled = YES;
 
@@ -138,7 +133,7 @@ static double FBSGetStrength(void){
         _btn.frame = self.bounds;
         _btn.layer.cornerRadius = 22;
         _btn.clipsToBounds = YES;
-        _btn.backgroundColor = [[UIColor systemBlueColor] colorWithAlphaComponent:0.85];
+        _btn.backgroundColor = [UIColor colorWithRed:0.2 green:0.5 blue:1.0 alpha:0.85];
         [_btn setTitle:@"设" forState:UIControlStateNormal];
         [_btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         _btn.titleLabel.font = [UIFont boldSystemFontOfSize:16];
@@ -149,6 +144,20 @@ static double FBSGetStrength(void){
         [_btn addGestureRecognizer:pan];
     }
     return self;
+}
+- (void)show {
+    if (self.superview) return;
+    UIWindowScene *ws = nil;
+    for (UIWindowScene *s in [UIApplication sharedApplication].connectedScenes) {
+        if ([s isKindOfClass:[UIWindowScene class]] && s.activationState == UISceneActivationStateForegroundActive) { ws = s; break; }
+    }
+    if (!ws) return;
+    for (UIWindow *w in ws.windows) {
+        if (w.isKeyWindow && w.rootViewController) {
+            [w addSubview:self];
+            return;
+        }
+    }
 }
 - (void)onPan:(UIPanGestureRecognizer *)p {
     CGPoint tr = [p translationInView:self];
@@ -192,7 +201,6 @@ static double FBSGetStrength(void){
 }
 @end
 
-// ==================== 安装手势 ====================
 static void FBSInstallOnNav(UINavigationController *nav) {
     @try {
         for (UIGestureRecognizer *g in nav.view.gestureRecognizers) {
@@ -229,7 +237,7 @@ static void FBSInstall(void) {
                 if (w.rootViewController) FBSWalk(w.rootViewController);
             }
         }
-        [FBSSettingsBall shared];
+        [[FBSSettingsBall shared] show];
     });
 }
 
