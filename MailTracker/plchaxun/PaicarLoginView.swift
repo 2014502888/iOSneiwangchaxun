@@ -82,6 +82,15 @@ struct PaicarModuleView: View {
             navOrderId = ""
             navMode = ""
         }
+        .onReceive(NotificationCenter.default.publisher(for: .paicarReloadAfterLogin)) { _ in
+            // 重新登录成功：对齐安卓清栈重启主页。把所有 push 出去的空白详情/拍照页弹回，
+            // 列表页自己会监听这个通知重新拉数据。
+            loggedIn = true
+            navTarget = .none
+            navPostId = ""
+            navOrderId = ""
+            navMode = ""
+        }
         .onReceive(NotificationCenter.default.publisher(for: .paicarOpenNewApply)) { _ in
             navTarget = .newApply
         }
