@@ -262,6 +262,8 @@ struct PaicarDetailView: View {
                     toastMsg = "操作成功"
                     PaicarFlags.dispatchDirty = true
                     load()
+                } catch PaicarError.authExpired {
+                    acting = false
                 } catch {
                     PaicarApi.silentAuthExpired = false
                     acting = false
@@ -522,6 +524,8 @@ struct PaicarApplyDetailView: View {
                 do {
                     _ = try await PaicarApi.applyOrderAction(id: orderId, action: "delete")
                     presentationMode.wrappedValue.dismiss()
+                } catch PaicarError.authExpired {
+                    acting = false
                 } catch {
                     PaicarApi.silentAuthExpired = false
                     acting = false
@@ -545,6 +549,8 @@ struct PaicarApplyDetailView: View {
                     acting = false
                     toastMsg = "已撤回，状态变为待提交"
                     refresh()
+                } catch PaicarError.authExpired {
+                    acting = false
                 } catch {
                     PaicarApi.silentAuthExpired = false
                     acting = false
