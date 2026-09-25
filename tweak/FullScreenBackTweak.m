@@ -117,6 +117,19 @@ static void FBSInstall(void) {
             if (![s isKindOfClass:[UIWindowScene class]]) continue;
             for (UIWindow *w in s.windows) {
                 if (w.rootViewController) FBSWalk(w.rootViewController);
+                // 悬浮设置按钮
+                static dispatch_once_t once;
+                dispatch_once(&once, ^{
+                    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+                    btn.frame = CGRectMake([UIScreen mainScreen].bounds.size.width - 60,
+                                           [UIScreen mainScreen].bounds.size.height - 220, 44, 44);
+                    btn.layer.cornerRadius = 22;
+                    btn.backgroundColor = [UIColor colorWithRed:0.2 green:0.5 blue:1.0 alpha:0.85];
+                    [btn setTitle:@"设" forState:UIControlStateNormal];
+                    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                    btn.titleLabel.font = [UIFont boldSystemFontOfSize:16];
+                    [w addSubview:btn];
+                });
             }
         }
     });
