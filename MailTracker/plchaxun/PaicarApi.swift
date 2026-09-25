@@ -64,7 +64,15 @@ enum PaicarApi {
             throw PaicarError.api("响应解析失败")
         }
         let r = PaicarResult.fromJson(obj)
-        if service != "App.User_user.login" && (r.ret < 0 || r.ret == authExpiredCode || r.ret == 400 || r.ret == 404) {
+        // 对齐安卓: 只有真被顶号(410)或鉴权类400(msg含登录失效字样)才弹重登框;
+        // 普通业务错误(ret<0/普通400/404)不弹, 否则新装登录后第一个业务请求就误弹。
+        let authMsg = r.msg
+        let isAuth400 = r.ret == 400 && (
+            authMsg.contains("未登录") || authMsg.contains("登录token") ||
+            authMsg.contains("请重新登录") || authMsg.contains("token已过期") ||
+            authMsg.contains("账号未登录")
+        )
+        if service != "App.User_user.login" && (r.ret == authExpiredCode || isAuth400) {
             if !silentAuthExpired { onAuthExpired?() }
             throw PaicarError.authExpired
         }
