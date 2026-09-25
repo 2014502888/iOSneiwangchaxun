@@ -73,7 +73,14 @@ struct PaicarModuleView: View {
             loggedIn = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .paicarForceLogin)) { _ in
+            // 对齐安卓取消后清栈回登录页：退出登录态的同时，把所有 push 出去的页面
+            // (详情/拍照结单/安排/快捷编辑等) 全部弹回，否则它们还压在登录页上面。
             loggedIn = false
+            autoLogging = false
+            navTarget = .none
+            navPostId = ""
+            navOrderId = ""
+            navMode = ""
         }
         .onReceive(NotificationCenter.default.publisher(for: .paicarOpenNewApply)) { _ in
             navTarget = .newApply
