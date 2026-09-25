@@ -21,7 +21,7 @@ struct RootView: View {
 
                         // 派车模块（受控 pop：内部发 paicarBackToRoot 通知可退出）
                         NavigationLink(destination: PaicarModuleView().paicarAuthGuard(), isActive: $showPaicar) {
-                            Text("快递派车")
+                            Text("寄递派车")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 40)
@@ -35,11 +35,6 @@ struct RootView: View {
                         entryButton("网址助手", color: Color(red: 1.0, green: 0.43, blue: 0.25)) { WebHelperView() }
                         entryButton("远程开机", color: purple) { RemoteBootView() }
 
-                        // 版本号：便于确认安装的是哪个 build（排查装错版本）
-                        Text("版本 " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"))
-                            .font(.system(size: 12))
-                            .foregroundColor(fg.opacity(0.5))
-                            .padding(.top, 8)
                     }
                     .frame(minHeight: geo.size.height)
                     .frame(maxWidth: .infinity)
