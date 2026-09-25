@@ -2,6 +2,26 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
+static NSString *kFBSKeyEnabled = @"fbs_enabled";
+static NSString *kFBSKeyHaptic  = @"fbs_haptic";
+static NSString *kFBSKeyStrength = @"fbs_strength";
+
+static BOOL FBSGetEnabled(void) {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    id v = [d objectForKey:kFBSKeyEnabled];
+    return v ? [v boolValue] : YES;
+}
+static BOOL FBSGetHaptic(void) {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    id v = [d objectForKey:kFBSKeyHaptic];
+    return v ? [v boolValue] : YES;
+}
+static double FBSGetStrength(void) {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    id v = [d objectForKey:kFBSKeyStrength];
+    return v ? [v doubleValue] : 0.8;
+}
+
 @interface FBSPanGesture : UIPanGestureRecognizer
 @end
 @implementation FBSPanGesture
@@ -22,6 +42,7 @@
     return s;
 }
 - (void)track:(UIPanGestureRecognizer *)g {
+    if (!FBSGetHaptic()) return;
     CGFloat w = [UIScreen mainScreen].bounds.size.width;
     switch (g.state) {
         case UIGestureRecognizerStateBegan:
@@ -32,7 +53,10 @@
             CGFloat tx = [g translationInView:g.view].x;
             CGFloat vx = [g velocityInView:g.view].x;
             if (tx > w * 0.35 || vx > 300) {
-                [_gen impactOccurredWithIntensity:1.0];
+                double s = FBSGetStrength();
+                if (s < 0.01) s = 0.01;
+                if (s > 1.0) s = 1.0;
+                [_gen impactOccurredWithIntensity:s];
             }
             _gen = nil;
             break;
@@ -69,6 +93,7 @@
     return nil;
 }
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)g {
+    if (!FBSGetEnabled()) return NO;
     if (![g isKindOfClass:[UIPanGestureRecognizer class]]) return NO;
     UIPanGestureRecognizer *p = (id)g;
     UINavigationController *nav = [self navOf:g.view];
@@ -126,7 +151,24 @@ static void FBSShowSettings(void) {
     UIViewController *top = FBSTopVC();
     if (!top) return;
     UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"全屏返回设置" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [ac addAction:[UIAlertAction actionWithTitle:@"全屏返回: 开" style:UIAlertActionStyleDefault handler:nil]];
+
+    BOOL en = FBSGetEnabled();
+    [ac addAction:[UIAlertAction actionWithTitle:en ? @"✓ 全屏返回: 开" : @"  全屏返回: 关" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
+        [[NSUserDefaults standardUserDefaults] setBool:!en forKey:kFBSKeyEnabled];
+    }]];
+
+    BOOL ha = FBSGetHaptic();
+    [ac addAction:[UIAlertAction actionWithTitle:ha ? @"✓ 确认震动: 开" : @"  确认震动: 关" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
+        [[NSUserDefaults standardUserDefaults] setBool:!ha forKey:kFBSKeyHaptic];
+    }]];
+
+    double st = FBSGetStrength();
+    [ac addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"震动强度: %.0f%%", st*100] style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
+        double next = st + 0.25;
+        if (next > 1.0) next = 0.25;
+        [[NSUserDefaults standardUserDefaults] setDouble:next forKey:kFBSKeyStrength];
+    }]];
+
     [ac addAction:[UIAlertAction actionWithTitle:@"关闭" style:UIAlertActionStyleCancel handler:nil]];
     [top presentViewController:ac animated:YES completion:nil];
 }
