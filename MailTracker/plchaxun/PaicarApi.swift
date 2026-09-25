@@ -73,7 +73,9 @@ enum PaicarApi {
             authMsg.contains("账号未登录")
         )
         if service != "App.User_user.login" && (r.ret == authExpiredCode || isAuth400) {
-            if !silentAuthExpired { onAuthExpired?() }
+            // 只有当前真有登录态(token非空)时才弹"被顶号"重登框;
+            // 空token(还没登录/刚登出)返回400未登录是正常的, 不弹框。
+            if !silentAuthExpired && !token.isEmpty { onAuthExpired?() }
             throw PaicarError.authExpired
         }
         return r
