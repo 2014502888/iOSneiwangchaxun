@@ -31,6 +31,9 @@ enum PaicarApi {
     static var relogining = false
     // 切换瞬间没弹成,下个页面补弹
     static var authExpiredPending = false
+    // 已成功加载过一次数据: 只有真正进过系统后, 被顶号才弹框;
+    // 首次登录/加载期间的400(空token竞态)不弹, 避免刚点登录就误弹。
+    static var hasLoadedOnce = false
     // 用户主动退出登录后不自动登录
     static var justLoggedOut = false
 
@@ -72,10 +75,13 @@ enum PaicarApi {
             authMsg.contains("请重新登录") || authMsg.contains("token已过期") ||
             authMsg.contains("账号未登录")
         )
+        if service != "App.User_user.login" && r.ret == 200 {
+            hasLoadedOnce = true
+        }
         if service != "App.User_user.login" && (r.ret == authExpiredCode || isAuth400) {
-            // 只有当前真有登录态(token非空)时才弹"被顶号"重登框;
-            // 空token(还没登录/刚登出)返回400未登录是正常的, 不弹框。
-            if !silentAuthExpired && !token.isEmpty { onAuthExpired?() }
+            // 只有真有登录态、且已经成功进过系统(hasLoadedOnce)才弹顶号框;
+            // 首次登录/加载期的空token竞态400不弹, 避免刚点登录就误弹。
+            if !silentAuthExpired && !token.isEmpty && hasLoadedOnce { onAuthExpired?() }
             throw PaicarError.authExpired
         }
         return r
@@ -221,6 +227,7 @@ enum PaicarApi {
         }
         token = info.token
         userId = info.userId
+        hasLoadedOnce = false
         return info
     }
 
@@ -518,6 +525,7 @@ enum PaicarSession {
         d.removeObject(forKey: kUser)
         PaicarApi.token = ""
         PaicarApi.userId = ""
+        hasLoadedOnce = false
     }
 }
 
