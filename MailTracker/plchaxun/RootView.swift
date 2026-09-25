@@ -52,41 +52,8 @@ struct RootView: View {
             .background(pageBg.ignoresSafeArea())
         }
         .navigationViewStyle(.stack)
-        // 全局登录失效弹窗（对齐安卓）：唯一一个，盖在所有页面之上
-        .alert("账号已在别处登入", isPresented: Binding(
-            get: { AuthDialog.shared.isShowing },
-            set: { AuthDialog.shared.isShowing = $0 }
-        )) {
-            Button("取消", role: .cancel) {
-                PaicarSession.clear()
-                PaicarProfileHolder.profile = nil
-                NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
-            }
-            Button("重新登录") {
-                let u = PaicarSession.savedUserNo
-                let p = PaicarSession.savedUserPwd
-                guard !u.isEmpty, !p.isEmpty else {
-                    PaicarSession.clear()
-                    NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
-                    return
-                }
-                Task {
-                    do {
-                        let info = try await PaicarApi.login(userNo: u, plainPassword: p)
-                        PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
-                        PaicarProfileHolder.profile = nil
-                        AuthDialog.shared.isShowing = false
-                        NotificationCenter.default.post(name: .paicarReloadAfterLogin, object: nil)
-                    } catch {
-                        AuthDialog.shared.isShowing = false
-                        PaicarSession.clear()
-                        NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
-                    }
-                }
-            }
-        } message: {
-            Text("是否重新登录？")
-        }
+        // 登录失效弹窗改由 AuthDialog.show() 用 UIKit 顶层 UIAlertController 弹出（深层 push 也盖得住），
+        // 不在此挂 SwiftUI alert。
         .onAppear {
             FullScreenBack.install()
             UIScrollView.appearance().backgroundColor = .clear

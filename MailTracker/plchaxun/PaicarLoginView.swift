@@ -61,9 +61,10 @@ struct PaicarModuleView: View {
             }
             PaicarApi.onAuthExpired = {
                 DispatchQueue.main.async {
-                    // 全局根级弹窗（对齐安卓 PaicarApp 全局弹）：不依赖每个页面挂监听，
-                    // 直接置状态，根 alert 盖在最上层；切页面瞬间也不会丢。
-                    AuthDialog.shared.isShowing = true
+                    // 对齐安卓 PaicarApp 全局弹：从最顶层 UIViewController 直接弹 UIAlertController，
+                    // 不依赖 SwiftUI 根 alert 在深层 push 后能否盖上来（详情->拍照结单这类深层页面
+                    // 根 alert 经常不弹），第几层都盖得住。
+                    AuthDialog.shared.show()
                 }
             }
         }
@@ -448,12 +449,50 @@ struct PaicarAuthExpiredHandler: ViewModifier {
     }
 }
 
-/// 全局登录失效弹窗状态（对齐安卓 PaicarApp.showAuthExpiredDialog）
-/// 根 RootView 只挂一个 alert 绑定它，不依赖每个页面挂通知监听。
-final class AuthDialog: ObservableObject {
+/// 全局登录失效弹窗（对齐安卓 PaicarApp.showAuthExpiredDialog）
+/// 从最顶层 UIViewController 弹 UIAlertController，不依赖 SwiftUI 根 alert 的层级呈现。
+final class AuthDialog {
     static let shared = AuthDialog()
     private init() {}
-    @Published var isShowing = false
+    var isShowing = false
+
+    func show() {
+        if isShowing { return }
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController ?? scene.windows.first?.rootViewController else { return }
+        var top = root
+        while let p = top.presentedViewController { top = p }
+
+        let alert = UIAlertController(title: "账号已在别处登入", message: "是否重新登录？", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in
+            self.isShowing = false
+            PaicarSession.clear()
+            PaicarProfileHolder.profile = nil
+            NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+        })
+        alert.addAction(UIAlertAction(title: "重新登录", style: .default) { _ in
+            self.isShowing = false
+            let u = PaicarSession.savedUserNo, p = PaicarSession.savedUserPwd
+            guard !u.isEmpty, !p.isEmpty else {
+                PaicarSession.clear()
+                NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+                return
+            }
+            Task {
+                do {
+                    let info = try await PaicarApi.login(userNo: u, plainPassword: p)
+                    PaicarSession.save(token: info.token, userId: info.userId, userNo: u, userPwd: p)
+                    PaicarProfileHolder.profile = nil
+                    NotificationCenter.default.post(name: .paicarReloadAfterLogin, object: nil)
+                } catch {
+                    PaicarSession.clear()
+                    NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
+                }
+            }
+        })
+        isShowing = true
+        top.present(alert, animated: true)
+    }
 }
 
 class PaicarAuthDialogState {
