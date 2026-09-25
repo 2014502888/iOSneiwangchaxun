@@ -280,6 +280,9 @@ struct PaicarFinishView: View {
                 leaveTime = nowTime()
                 loadDraft()
             } catch PaicarError.authExpired {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    presentationMode.wrappedValue.dismiss()
+                }
             } catch {
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
