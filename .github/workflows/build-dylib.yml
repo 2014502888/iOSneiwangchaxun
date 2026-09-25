@@ -13,15 +13,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build dylib
         run: |
+          set -x
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           clang -arch arm64 \
                 -isysroot "$SDK" \
                 -dynamiclib -fobjc-arc \
+                -Wno-deprecated-declarations \
                 -framework UIKit \
                 -framework Foundation \
                 -install_name @rpath/FullScreenBackTweak.dylib \
                 -o tweak/FullScreenBackTweak.dylib \
-                tweak/FullScreenBackTweak.m
+                tweak/FullScreenBackTweak.m 2>&1
+          echo "EXIT: $?"
           ls -la tweak/FullScreenBackTweak.dylib
       - name: Upload dylib
         uses: actions/upload-artifact@v4
