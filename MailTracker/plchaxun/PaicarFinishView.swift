@@ -281,7 +281,7 @@ struct PaicarFinishView: View {
                 loadDraft()
             } catch PaicarError.authExpired {
                 // 被顶号：不自动退页，停在原地等全局弹窗（AuthDialog）的 取消/重新登录 决定下一步。
-                loading = false
+                // 本页无 loading 状态，全局弹窗负责后续导航，这里什么都不用做。
             } catch {
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
