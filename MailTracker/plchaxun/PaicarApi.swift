@@ -204,7 +204,7 @@ enum PaicarApi {
         // 手动检查登录失效:上传接口返回格式可能不同,只检查410
         let ret = (obj["ret"] as? NSNumber)?.intValue ?? 200
         if ret == 410 {
-            if !silentAuthExpired { onAuthExpired?() }
+            if !silentAuthExpired && !token.isEmpty && hasLoadedOnce { onAuthExpired?() }
             throw PaicarError.authExpired
         }
         return obj
@@ -234,7 +234,9 @@ enum PaicarApi {
     static func profile() async throws -> [String: Any] {
         let r = try await get("App.User_user.profile", params: [])
         if !r.ok {
-            if !silentAuthExpired { onAuthExpired?() }
+            // parseBody 已处理真顶号(410/鉴权400); 这里只是普通业务错误,
+            // 仅在真有登录态且已进过系统时才视为顶号, 避免首次加载误弹。
+            if !silentAuthExpired && !token.isEmpty && hasLoadedOnce { onAuthExpired?() }
             throw PaicarError.authExpired
         }
         return (r.dataMap["profile"] as? [String: Any]) ?? [:]
