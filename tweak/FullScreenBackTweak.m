@@ -7,8 +7,16 @@ static NSString *kFBSKeyEnabled = @"fbs_enabled";
 static NSString *kFBSKeyHaptic  = @"fbs_haptic";
 static NSString *kFBSKeyStrength = @"fbs_strength";
 
-static BOOL FBSGetEnabled(void)   { return [[NSUserDefaults standardUserDefaults] boolForKey:kFBSKeyEnabled] || ![[NSUserDefaults standardUserDefaults] objectForKey:kFBSKeyEnabled]; }
-static BOOL FBSGetHaptic(void)    { return [[NSUserDefaults standardUserDefaults] boolForKey:kFBSKeyHaptic] || ![[NSUserDefaults standardUserDefaults] objectForKey:kFBSKeyHaptic]; }
+static BOOL FBSGetEnabled(void) {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    id v = [d objectForKey:kFBSKeyEnabled];
+    return v ? [v boolValue] : YES;
+}
+static BOOL FBSGetHaptic(void) {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    id v = [d objectForKey:kFBSKeyHaptic];
+    return v ? [v boolValue] : YES;
+}
 static double FBSGetStrength(void){
     NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
     if ([d objectForKey:kFBSKeyStrength]) return [d doubleForKey:kFBSKeyStrength];
@@ -124,7 +132,6 @@ static double FBSGetStrength(void){
     if (self) {
         self.windowLevel = UIWindowLevelAlert + 1;
         self.backgroundColor = [UIColor clearColor];
-        self.hidden = NO;
         self.userInteractionEnabled = YES;
 
         _btn = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -134,7 +141,7 @@ static double FBSGetStrength(void){
         _btn.backgroundColor = [[UIColor systemBlueColor] colorWithAlphaComponent:0.85];
         [_btn setTitle:@"设" forState:UIControlStateNormal];
         [_btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        _btn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+        _btn.titleLabel.font = [UIFont boldSystemFontOfSize:16];
         [_btn addTarget:self action:@selector(onTap) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_btn];
 
@@ -144,10 +151,9 @@ static double FBSGetStrength(void){
     return self;
 }
 - (void)onPan:(UIPanGestureRecognizer *)p {
-    UIWindow *keyWin = [UIApplication sharedApplication].keyWindow;
-    CGPoint tr = [p translationInView:keyWin];
+    CGPoint tr = [p translationInView:self];
     p.view.center = CGPointMake(p.view.center.x + tr.x, p.view.center.y + tr.y);
-    [p setTranslation:CGPointZero inView:keyWin];
+    [p setTranslation:CGPointZero inView:self];
 }
 - (UIViewController *)topVC {
     UIWindowScene *ws = nil;
