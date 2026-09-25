@@ -255,9 +255,7 @@ struct PaicarDetailView: View {
             acting = true
             Task {
                 do {
-                    PaicarApi.silentAuthExpired = true
                     _ = try await PaicarApi.dispatchAction(id: o.id, action: "recall")
-                    PaicarApi.silentAuthExpired = false
                     acting = false
                     toastMsg = "操作成功"
                     PaicarFlags.dispatchDirty = true
@@ -265,7 +263,6 @@ struct PaicarDetailView: View {
                 } catch PaicarError.authExpired {
                     acting = false
                 } catch {
-                    PaicarApi.silentAuthExpired = false
                     acting = false
                     toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 }
@@ -527,7 +524,6 @@ struct PaicarApplyDetailView: View {
                 } catch PaicarError.authExpired {
                     acting = false
                 } catch {
-                    PaicarApi.silentAuthExpired = false
                     acting = false
                     toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 }
@@ -543,16 +539,13 @@ struct PaicarApplyDetailView: View {
             acting = true
             Task {
                 do {
-                    PaicarApi.silentAuthExpired = true
                     _ = try await PaicarApi.applyOrderAction(id: orderId, action: "recall")
-                    PaicarApi.silentAuthExpired = false
                     acting = false
                     toastMsg = "已撤回，状态变为待提交"
                     refresh()
                 } catch PaicarError.authExpired {
                     acting = false
                 } catch {
-                    PaicarApi.silentAuthExpired = false
                     acting = false
                     toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 }
