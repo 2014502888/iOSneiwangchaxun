@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 派车模块入口（对应 PaicarLoginActivity + PaicarHomeActivity 路由）
 
