@@ -406,6 +406,7 @@ struct PaicarAuthExpiredHandler: ViewModifier {
         content
             .onReceive(NotificationCenter.default.publisher(for: .paicarAuthExpired)) { _ in
                 if PaicarAuthDialogState.isShowing { return }
+                if PaicarApi.silentAuthExpired { return }
                 PaicarAuthDialogState.isShowing = true
                 PaicarApi.silentAuthExpired = true
                 show = true
@@ -415,7 +416,6 @@ struct PaicarAuthExpiredHandler: ViewModifier {
                     PaicarAuthDialogState.isShowing = false
                     PaicarSession.clear()
                     PaicarProfileHolder.profile = nil
-                    PaicarApi.silentAuthExpired = false
                     NotificationCenter.default.post(name: .paicarForceLogin, object: nil)
                 }
                 Button("重新登录") {

@@ -279,7 +279,10 @@ struct PaicarFinishView: View {
                 randomLoadingNum()
                 leaveTime = nowTime()
                 loadDraft()
+            } catch PaicarError.authExpired {
+                loading = false
             } catch {
+                loading = false
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     presentationMode.wrappedValue.dismiss()
@@ -423,6 +426,8 @@ struct PaicarFinishView: View {
                 } else {
                     toastMsg = (fr.dataMap["msg"] as? String) ?? "结单失败"
                 }
+            } catch PaicarError.authExpired {
+                saving = false
             } catch {
                 saving = false
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
@@ -452,6 +457,8 @@ struct PaicarFinishView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     presentationMode.wrappedValue.dismiss()
                 }
+            } catch PaicarError.authExpired {
+                saving = false
             } catch {
                 saving = false
                 toastMsg = (error as? PaicarError)?.errorDescription ?? error.localizedDescription
